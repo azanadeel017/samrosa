@@ -1,0 +1,36 @@
+{
+  "name": "samrosa",
+  "version": "0.1.0",
+  "description": "B2B food waste compliance and logistics middleware — IRC § 170(e)(3) deduction automation engine.",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "db:migrate": "psql $DATABASE_URL -f schema.sql",
+    "lint": "eslint src/**/*.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "pg": "^8.12.0",
+    "uuid": "^10.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.7.0",
+    "nodemon": "^3.1.4"
+  },
+  "keywords": [
+    "food-waste",
+    "compliance",
+    "logistics",
+    "irc-170",
+    "tax-deduction",
+    "b2b",
+    "middleware"
+  ],
+  "license": "UNLICENSED",
+  "private": true
+}
