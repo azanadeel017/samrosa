@@ -240,5 +240,29 @@ CREATE INDEX IF NOT EXISTS idx_tax_receipts_tax_year    ON tax_receipts (tax_yea
 CREATE INDEX IF NOT EXISTS idx_tax_receipts_issued_at   ON tax_receipts (issued_at DESC);
 
 -- =============================================================================
+-- TABLE: carbon_metrics
+-- Records the Scope 3 greenhouse gas avoidance metrics for delivered donations.
+-- Computed using the EPA WARM v15 methodology.
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS carbon_metrics (
+  id                  UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  donation_id         UUID          NOT NULL UNIQUE REFERENCES donations(id) ON DELETE RESTRICT,
+  donor_id            UUID          NOT NULL REFERENCES donors(id) ON DELETE RESTRICT,
+  weight_lbs          NUMERIC(10,3) NOT NULL,
+  classification      VARCHAR(20)   NOT NULL,
+  avoided_co2e_lbs    NUMERIC(12,2) NOT NULL,
+  registry_status     VARCHAR(50)   NOT NULL DEFAULT 'PENDING',
+  created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+
+  CONSTRAINT carbon_metrics_weight_positive
+    CHECK (weight_lbs > 0),
+  CONSTRAINT carbon_metrics_avoided_co2e_positive
+    CHECK (avoided_co2e_lbs > 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_carbon_metrics_donor_id ON carbon_metrics (donor_id);
+CREATE INDEX IF NOT EXISTS idx_carbon_metrics_created_at ON carbon_metrics (created_at DESC);
+
+-- =============================================================================
 -- End of schema
 -- =============================================================================
