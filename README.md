@@ -1,4 +1,4 @@
-# samrosa
+# Samrosa
 
 **B2B Food Waste Compliance & Logistics Middleware**  
 *Connecting surplus food to qualified nonprofits while automating IRC § 170(e)(3) Enhanced Deduction documentation.*
