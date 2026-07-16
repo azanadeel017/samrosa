@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  <!-- SEO & Identity -->
+  <title>samrosa — Rescue Ledger</title>
+  <meta name="description" content="Log surplus food donations and sync to the samrosa compliance ledger in under 10 seconds. IRC § 170(e)(3) deduction computed instantly." />
+  <meta name="application-name" content="samrosa" />
+  <meta name="author" content="samrosa" />
+
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#0d0f1a" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="samrosa" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="samrosa — Rescue Ledger" />
+  <meta property="og:description" content="B2B food waste compliance middleware. Log surplus. Claim deductions. Reduce waste." />
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="/css/style.css" />
+
+  <!-- Preconnect for Google Fonts (loaded by CSS) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- Donor Setup Modal — shown on first launch until donor_id is configured -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <div id="setup-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-card">
+      <h1 id="modal-title" class="modal-title">Configure Terminal</h1>
+      <p class="modal-subtitle">
+        Enter the Donor UUID assigned to this location by your samrosa administrator.
+        It is stored locally on this device and never transmitted separately.
+      </p>
+      <input
+        id="donor-id-input"
+        class="setup-input"
+        type="text"
+        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+        maxlength="36"
+        aria-label="Donor UUID"
+      />
+      <button id="save-setup-btn" class="setup-save-btn" type="button">
+        Activate Terminal
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <!-- Main Application Shell                                                 -->
+  <!-- ═══════════════════════════════════════════════════════════════════════ -->
+  <main class="app-shell" role="main">
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">🌿</div>
+        <span class="brand-name">samrosa</span>
+      </div>
+      <div class="status-pill" id="status-pill" aria-live="polite" aria-label="Connection status">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-label">Live</span>
+      </div>
+    </header>
+
+    <!-- ── Step 1: Total Weight ─────────────────────────────────────────── -->
+    <section aria-labelledby="weight-label">
+      <p class="section-label" id="weight-label">① Total Weight</p>
+      <div class="card weight-block">
+        <div class="weight-display-row">
+          <input
+            id="weight-number"
+            type="number"
+            min="0.1"
+            max="999999"
+            step="0.5"
+            value="25"
+            inputmode="decimal"
+            aria-label="Weight in pounds"
+          />
+          <span class="weight-unit">lbs</span>
+        </div>
+        <div class="weight-slider-wrap">
+          <input
+            id="weight-slider"
+            type="range"
+            min="1"
+            max="500"
+            step="0.5"
+            value="25"
+            aria-label="Weight slider (1–500 lbs)"
+          />
+          <div class="slider-limits">
+            <span>1 lb</span>
+            <span>500 lbs</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Step 2: Food Category ────────────────────────────────────────── -->
+    <section aria-labelledby="category-label">
+      <p class="section-label" id="category-label">② Food Category</p>
+      <div class="category-toggle" role="group" aria-label="Food classification">
+        <button
+          class="category-btn"
+          type="button"
+          data-value="PERISHABLE"
+          data-active="true"
+          aria-pressed="true"
+          id="btn-perishable"
+        >
+          <span class="cat-icon">🥗</span>
+          Perishable
+        </button>
+        <button
+          class="category-btn"
+          type="button"
+          data-value="SHELF_STABLE"
+          data-active="false"
+          aria-pressed="false"
+          id="btn-shelf-stable"
+        >
+          <span class="cat-icon">📦</span>
+          Shelf-Stable
+        </button>
+      </div>
+    </section>
+
+    <!-- ── Step 3: Financial Values ─────────────────────────────────────── -->
+    <section aria-labelledby="financials-label">
+      <p class="section-label" id="financials-label">③ Financial Values</p>
+      <div class="card">
+        <div class="financials-grid">
+          <div class="input-group">
+            <label for="cost-basis">Cost Basis</label>
+            <div class="input-wrap">
+              <span class="input-prefix" aria-hidden="true">$</span>
+              <input
+                id="cost-basis"
+                class="currency-input"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                inputmode="decimal"
+                aria-label="Cost basis in US dollars"
+              />
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="retail-value">Retail Value</label>
+            <div class="input-wrap">
+              <span class="input-prefix" aria-hidden="true">$</span>
+              <input
+                id="retail-value"
+                class="currency-input"
+                type="number"
+                min="0.01"
+                step="0.01"
+                placeholder="0.00"
+                inputmode="decimal"
+                aria-label="Retail fair market value in US dollars"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Live IRC § 170(e)(3) Deduction Preview ───────────────────────── -->
+    <div
+      id="deduction-preview"
+      class="deduction-preview hidden"
+      aria-live="polite"
+      aria-label="Computed enhanced deduction"
+    >
+      <div class="deduction-label">
+        Enhanced Deduction
+        <span>IRC § 170(e)(3) · min(2C, FMV)</span>
+      </div>
+      <div id="deduction-value" class="deduction-value">—</div>
+    </div>
+
+    <!-- ── Validation Errors ─────────────────────────────────────────────── -->
+    <ul
+      id="validation-errors"
+      class="validation-errors"
+      role="alert"
+      aria-live="assertive"
+    >
+      <!-- Populated dynamically by app.js -->
+      <div id="error-list"></div>
+    </ul>
+
+    <!-- ── Primary CTA ───────────────────────────────────────────────────── -->
+    <button
+      id="submit-btn"
+      class="cta-button"
+      type="button"
+      aria-label="Authorize rescue and sync to ledger"
+    >
+      <span class="btn-text">Authorize Rescue &amp; Sync Ledger</span>
+      <div class="btn-loader" aria-hidden="true">
+        <div class="spinner"></div>
+      </div>
+    </button>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      samrosa Rescue Ledger &nbsp;·&nbsp; IRC § 170(e)(3) Compliance Engine<br />
+      <a href="#" id="reconfigure-link" onclick="localStorage.removeItem('samrosa_donor_id'); location.reload(); return false;">
+        Reconfigure Terminal
+      </a>
+    </footer>
+
+  </main>
+
+  <!-- Toast Notification Layer -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Application Script -->
+  <script src="/js/app.js"></script>
+</body>
+</html>

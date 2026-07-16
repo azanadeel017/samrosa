@@ -1,0 +1,37 @@
+{
+  "name": "samrosa — Rescue Ledger",
+  "short_name": "samrosa",
+  "description": "Log surplus food donations and sync to the compliance ledger in under 10 seconds.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0d0f1a",
+  "background_color": "#0d0f1a",
+  "lang": "en-US",
+  "scope": "/",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Log Surplus",
+      "short_name": "Log",
+      "description": "Quickly log a new food surplus donation",
+      "url": "/?action=log",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
