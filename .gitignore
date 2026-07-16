@@ -1,14 +1,20 @@
-# ── Dependencies ──────────────────────────────────────────────────────────────
+# ── Dependencies (both packages) ─────────────────────────────────────────────
 node_modules/
+backend/node_modules/
+frontend/node_modules/
 
 # ── Environment Secrets ───────────────────────────────────────────────────────
 .env
 .env.local
 .env.*.local
+backend/.env
+frontend/.env
 
 # ── Build Artifacts ───────────────────────────────────────────────────────────
 dist/
 build/
+backend/dist/
+frontend/dist/
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 logs/

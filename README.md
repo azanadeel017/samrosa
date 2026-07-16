@@ -70,20 +70,40 @@ For a donation to qualify under § 170(e)(3), samrosa validates:
 
 ---
 
-## Architecture
+## Repository Structure
+
+samrosa is organized as an enterprise monorepo. Each package is independently deployable and versioned. The root contains only shared configuration (`.gitignore`, `README.md`).
 
 ```
-samrosa/
-├── schema.sql                  # PostgreSQL DDL — single source of truth
-├── .env.example                # Environment variable template
-├── package.json
-└── src/
-    ├── server.js               # Express app bootstrap & lifecycle management
-    ├── db/
-    │   └── index.js            # pg Pool singleton, query helper, health check
-    └── routes/
-        └── donations.js        # POST /api/donations/upload router
+samrosa/                              ← Monorepo root
+├── .gitignore                        ← Unified ignore rules for all packages
+├── README.md                         ← This document
+│
+├── backend/                          ← Node.js / Express API package
+│   ├── package.json
+│   ├── .env.example
+│   ├── schema.sql                    ← PostgreSQL DDL — single source of truth
+│   └── src/
+│       ├── server.js                 ← Express bootstrap & lifecycle management
+│       ├── db/
+│       │   └── index.js              ← pg Pool singleton, query helper, health check
+│       ├── routes/
+│       │   └── donations.js          ← POST /api/donations/upload router
+│       └── services/
+│           ├── taxEngine.js          ← IRC § 170(e)(3) computation & receipt engine
+│           └── carbonEngine.js       ← GHG emissions avoidance & carbon credit pipeline
+│
+└── frontend/                         ← Progressive Web App (PWA) package
+    ├── index.html                    ← Cashier surplus intake interface
+    ├── manifest.json                 ← PWA web app manifest
+    ├── sw.js                         ← Service worker (cache-first shell, offline POST queue)
+    ├── css/
+    │   └── style.css                 ← Design system — dark glassmorphism, Inter typeface
+    └── js/
+        └── app.js                    ← Application logic, validation, fetch, toast system
 ```
+
+## Architecture
 
 ### Design Principles
 
