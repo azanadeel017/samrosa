@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Reveal from "./Reveal";
 
 export default function Closing() {
@@ -38,19 +39,19 @@ export default function Closing() {
         </Reveal>
         <Reveal delay={240}>
           <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            <a
-              href="#donors"
+            <Link
+              href="/signup?role=donor"
               className="inline-flex items-center gap-2 rounded-full bg-ink px-6 py-3.5 text-base font-medium text-cream shadow-raised transition hover:bg-burnt"
             >
               Sign up your restaurant
               <span aria-hidden>→</span>
-            </a>
-            <a
-              href="#shelters"
+            </Link>
+            <Link
+              href="/signup?role=shelter"
               className="link-underline text-base font-medium text-ink"
             >
               Or bring your shelter on board
-            </a>
+            </Link>
           </div>
         </Reveal>
       </div>
