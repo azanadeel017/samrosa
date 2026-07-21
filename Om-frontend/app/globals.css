@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    background:
+      radial-gradient(1200px 700px at 12% -10%, rgba(247,169,68,0.16), transparent 60%),
+      radial-gradient(900px 600px at 90% 8%, rgba(204,90,63,0.10), transparent 70%),
+      #FFF8EA;
+    color: #3A2417;
+    font-family: "General Sans", system-ui, sans-serif;
+    font-feature-settings: "ss01", "ss02";
+  }
+  ::selection {
+    background: #F7A944;
+    color: #3A2417;
+  }
+  :focus-visible {
+    outline: 2px solid #C75B12;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+}
+
+@keyframes rise-in {
+  0%   { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/*
+ * Rise: on-load entry animation.
+ * Base state = final state so content is always readable, even if the browser
+ * or environment pauses animations. `js-motion` on <html> opts into the fade
+ * on real browsers with an advancing timeline.
+ */
+.rise {
+  opacity: 1;
+  transform: none;
+}
+html.js-motion .rise {
+  animation: rise-in 800ms cubic-bezier(0.2, 0.7, 0.2, 1) var(--rise-delay, 0ms) both;
+}
+
+.link-underline {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  transition: background-size 250ms ease;
+}
+.link-underline:hover {
+  background-size: 0% 1px;
+  background-position: 100% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .rise, .rise-io { opacity: 1 !important; transform: none !important; }
+}
