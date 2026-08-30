@@ -25,6 +25,7 @@
 
 const express  = require('express');
 const { query } = require('../db');
+const { sendTeamAlert } = require('../services/teamAlert');
 
 const router = express.Router();
 
@@ -287,7 +288,16 @@ router.post('/upload', async (req, res) => {
     const result = await query(insertSQL, values);
     const row    = result.rows[0];
 
-    // ── 4. Return minimal, audit-safe response ───────────────────────────────
+    // ── 4. Fire pilot team notification (non-blocking) ────────────────────────
+    sendTeamAlert({
+      weight: total_weight_lbs,
+      category: classification,
+      deduction: parseFloat(row.enhanced_deduction),
+      transactionId: row.transaction_id,
+      description: description.trim(),
+    }).catch(() => {}); // swallow — must never block the response
+
+    // ── 5. Return minimal, audit-safe response ───────────────────────────────
     return res.status(201).json({
       success:            true,
       transaction_id:     row.transaction_id,

@@ -34,6 +34,9 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // ─── Global Middleware ────────────────────────────────────────────────────────
 
+const cors = require('cors');
+app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:5000'] }));
+
 // Parse incoming JSON payloads (max 1 MB to prevent body-bomb DoS)
 app.use(express.json({ limit: '1mb' }));
 
