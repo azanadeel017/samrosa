@@ -265,6 +265,10 @@ async function handleSubmit() {
   setSubmitting(true);
 
   try {
+    if (!navigator.onLine) {
+      throw new Error('Offline');
+    }
+
     const response = await fetch(API_ENDPOINT, {
       method:  'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -272,13 +276,6 @@ async function handleSubmit() {
     });
 
     const data = await response.json();
-
-    // Offline synthetic response from service worker
-    if (data.offline && data.queued) {
-      showToast('warning', 'Saved Offline', data.message);
-      resetForm();
-      return;
-    }
 
     if (response.ok && data.success) {
       const deductionFormatted = new Intl.NumberFormat('en-US', {
@@ -299,12 +296,61 @@ async function handleSubmit() {
     }
 
   } catch (err) {
-    console.error('[app] Submission error:', err);
-    showToast('error', 'Network Error', 'Could not reach the server. If offline, your donation has been queued.');
+    console.error('[app] Submission error or offline:', err);
+    saveToOfflineQueue(payload);
+    showToast('warning', 'Saved Offline', 'Offline - Saved to local queue. Will sync when reconnected.');
+    resetForm();
   } finally {
     setSubmitting(false);
   }
 }
+
+// ─── Offline Queue Logic ──────────────────────────────────────────────────────
+
+const OFFLINE_QUEUE_KEY = 'samrosa_offline_queue';
+
+function saveToOfflineQueue(payload) {
+  const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+  queue.push(payload);
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(queue));
+}
+
+async function syncOfflineQueue() {
+  const queue = JSON.parse(localStorage.getItem(OFFLINE_QUEUE_KEY) || '[]');
+  if (queue.length === 0) return;
+
+  showToast('success', 'Syncing', `Syncing ${queue.length} offline donations...`);
+  const remainingQueue = [];
+
+  for (const payload of queue) {
+    try {
+      const response = await fetch(API_ENDPOINT, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        remainingQueue.push(payload);
+      }
+    } catch (err) {
+      remainingQueue.push(payload);
+    }
+  }
+
+  localStorage.setItem(OFFLINE_QUEUE_KEY, JSON.stringify(remainingQueue));
+  
+  if (remainingQueue.length === 0) {
+    showToast('success', 'Sync Complete', 'All offline donations have been synced.');
+  } else {
+    showToast('warning', 'Sync Partial', `${remainingQueue.length} donations could not be synced and remain in queue.`);
+  }
+}
+
+window.addEventListener('online', () => {
+  updateNetworkStatus();
+  syncOfflineQueue();
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

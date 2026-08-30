@@ -12,6 +12,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
   <style>
+    body {
+      background-color: var(--clr-bg-base);
+      color: var(--clr-text-primary);
+    }
     .dashboard-container {
       max-width: 1200px;
       margin: 0 auto;
@@ -25,6 +29,12 @@
       margin-bottom: 2rem;
     }
 
+    .dashboard-title {
+      font-size: var(--text-2xl);
+      font-weight: 800;
+      color: var(--clr-text-primary);
+    }
+
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -33,37 +43,39 @@
     }
 
     .metric-card {
-      background: var(--clr-card);
-      border: 1px solid var(--clr-border);
+      background: var(--clr-glass);
+      border: 1px solid var(--clr-glass-border);
       border-radius: var(--radius-lg);
       padding: 1.5rem;
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
     }
 
     .metric-label {
-      font-size: 0.875rem;
-      color: var(--clr-text-muted);
+      font-size: var(--text-sm);
+      color: var(--clr-text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
 
     .metric-value {
       font-size: 2rem;
-      font-weight: 700;
-      color: var(--clr-primary);
+      font-weight: 800;
+      color: var(--clr-text-primary);
     }
     
     .metric-value.currency {
-      color: var(--clr-success);
+      color: var(--clr-teal);
     }
     
     .table-container {
-      background: var(--clr-card);
-      border: 1px solid var(--clr-border);
+      background: var(--clr-bg-surface);
+      border: 1px solid var(--clr-glass-border);
       border-radius: var(--radius-lg);
       overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
     }
     
     table {
@@ -74,9 +86,15 @@
     
     th, td {
       padding: 1rem 1.5rem;
-      border-bottom: 1px solid var(--clr-border);
+      border-bottom: 1px solid var(--clr-glass-border);
+      color: var(--clr-text-secondary);
+      font-size: var(--text-sm);
     }
     
+    td {
+      color: var(--clr-text-primary);
+    }
+
     th {
       background: rgba(255, 255, 255, 0.02);
       font-weight: 600;
@@ -88,13 +106,26 @@
     }
 
     .nav-link {
-      color: var(--clr-primary);
+      color: var(--clr-teal);
       text-decoration: none;
       font-weight: 600;
+      transition: color var(--dur-fast);
     }
 
     .nav-link:hover {
-      text-decoration: underline;
+      color: #fff;
+    }
+
+    .export-btn {
+      background: linear-gradient(135deg, var(--clr-teal), #6366f1);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+      font-size: var(--text-sm);
+      box-shadow: 0 4px 12px rgba(0, 212, 170, 0.2);
     }
   </style>
 </head>
