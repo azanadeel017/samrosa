@@ -12,6 +12,12 @@ const { randomBytes } = require('crypto');
 const NET_INCOME_CEILING_RATE = 0.15;
 const RECEIPT_NUMBER_PREFIX = 'SR';
 
+const IRC_170E3_V1 = {
+  ruleId: 'IRC_170E3_V1',
+  description: 'IRC Section 170(e)(3) Enhanced Deduction',
+  disclaimer: "Estimates provided for documentation and tax professional review. Final determinations made by the merchant's licensed CPA."
+};
+
 /**
  * Compute the IRC § 170(e)(3) enhanced deduction.
  * Formula: Minimum of:
@@ -34,6 +40,7 @@ function computeEnhancedDeduction({ costBasis, retailValue }) {
     enhancedDeduction: parseFloat(enhancedDeduction.toFixed(2)),
     standardDeduction: parseFloat(standardDeduction.toFixed(2)),
     incrementalBenefit,
+    rule: IRC_170E3_V1
   };
 }
 

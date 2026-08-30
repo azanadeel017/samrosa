@@ -60,7 +60,11 @@ async function fetchDashboardData() {
   }
 }
 
+let currentDonations = [];
+
 function renderDashboard(data) {
+  currentDonations = data.recentDonations || [];
+  
   // Update metric cards
   valWeight.textContent  = `${data.totalRescuedWeightLbs.toLocaleString()} lbs`;
   valTax.textContent     = `$${data.totalTaxDeductionValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -84,5 +88,52 @@ function renderDashboard(data) {
   `).join('');
 }
 
+function exportCSV() {
+  if (currentDonations.length === 0) {
+    showToast('warning', 'No Data', 'No transactions to export.');
+    return;
+  }
+
+  const headers = [
+    'Donation ID', 'Date', 'Category', 'Weight (lbs)', 'Cost Basis ($)',
+    'Retail Value ($)', 'Est. §170(e)(3) Deduction ($)', 'CO2e Avoided (kg)',
+    'Methane Offset (kg)', 'Meals Equivalent', 'Recipient Organization (501c3)'
+  ];
+
+  let csvContent = headers.map(h => `"${h}"`).join(',') + '\n';
+
+  currentDonations.forEach(d => {
+    const row = [
+      d.id,
+      new Date(d.date).toISOString(),
+      d.classification,
+      d.weight_lbs,
+      d.cost_basis,
+      d.retail_value,
+      d.tax_deduction_usd,
+      d.co2e_kg,
+      d.methane_kg,
+      d.meals_equivalent,
+      d.recipient_name
+    ];
+    csvContent += row.map(val => `"${val}"`).join(',') + '\n';
+  });
+
+  csvContent += '\n"Estimates provided for documentation and tax professional review. Final determinations made by the merchant\'s licensed CPA."\n';
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', 'samrosa_ledger.csv');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 // Initialize
-document.addEventListener('DOMContentLoaded', fetchDashboardData);
+document.addEventListener('DOMContentLoaded', () => {
+  fetchDashboardData();
+  const exportBtn = document.getElementById('export-csv-btn');
+  if (exportBtn) exportBtn.addEventListener('click', exportCSV);
+});
