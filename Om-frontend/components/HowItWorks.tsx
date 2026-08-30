@@ -37,7 +37,7 @@ export default function HowItWorks() {
   return (
     <section
       id="how"
-      className="relative border-t border-ink/5 bg-cream/50 py-24 sm:py-32"
+      className="relative -scroll-mt-24 border-t border-ink/5 bg-cream/50 py-24 sm:py-32"
       aria-labelledby="how-heading"
     >
       <div className="mx-auto max-w-6xl px-6 sm:px-10">

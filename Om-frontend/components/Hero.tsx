@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Reveal from "./Reveal";
 
 export default function Hero() {
@@ -57,13 +58,13 @@ export default function Hero() {
 
         <Reveal delay={280}>
           <div className="mt-10 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-            <a
-              href="#donors"
-              className="inline-flex items-center gap-2 rounded-full bg-burnt px-6 py-3.5 text-base font-medium text-cream shadow-raised transition hover:bg-terracotta focus-visible:outline-offset-4"
+            <Link
+              href="/signup?role=donor"
+              className="group inline-flex items-center gap-2 rounded-full bg-burnt px-6 py-3.5 text-base font-medium text-cream shadow-raised transition hover:bg-terracotta focus-visible:outline-offset-4"
             >
               Become a donor
               <span aria-hidden className="transition-transform group-hover:translate-x-1">→</span>
-            </a>
+            </Link>
             <a
               href="#how"
               className="link-underline text-base font-medium text-ink hover:text-terracotta"

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import Reveal from "./Reveal";
 
 type Role = {
@@ -9,6 +10,7 @@ type Role = {
   cta: string;
   accent: "burnt" | "terracotta" | "marigold";
   swatch: string;
+  signupRole: "donor" | "shelter" | "driver";
 };
 
 const roles: Role[] = [
@@ -28,7 +30,8 @@ const roles: Role[] = [
     ],
     cta: "Become a donor",
     accent: "burnt",
-    swatch: "#FFCC93",
+    swatch: "#FEC671",
+    signupRole: "donor",
   },
   {
     id: "shelters",
@@ -47,6 +50,7 @@ const roles: Role[] = [
     cta: "Register as a shelter",
     accent: "terracotta",
     swatch: "#FEC671",
+    signupRole: "shelter",
   },
   {
     id: "drivers",
@@ -63,8 +67,9 @@ const roles: Role[] = [
       "Automatic volunteer-hours tally",
     ],
     cta: "Volunteer as a driver",
-    accent: "marigold",
-    swatch: "#F7A944",
+    accent: "terracotta",
+    swatch: "#FEC671",
+    signupRole: "driver",
   },
 ];
 
@@ -168,13 +173,13 @@ export default function Roles() {
                   </ul>
                 </Reveal>
                 <Reveal delay={380}>
-                  <a
-                    href="#"
+                  <Link
+                    href={`/signup?role=${r.signupRole}`}
                     className={`mt-10 inline-flex items-center gap-2 rounded-full px-6 py-3.5 text-base font-medium text-cream shadow-raised transition ${accentBg[r.accent]}`}
                   >
                     {r.cta}
                     <span aria-hidden>→</span>
-                  </a>
+                  </Link>
                 </Reveal>
               </div>
             </div>

@@ -29,12 +29,20 @@ export default function Nav() {
           </a>
         </nav>
 
-        <a
-          href="#donors"
-          className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-cream shadow-soft transition hover:bg-burnt sm:px-5"
-        >
-          Become a donor
-        </a>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Link
+            href="/login"
+            className="link-underline rounded-full px-3 py-2 text-sm font-medium text-ink/80 hover:text-ink"
+          >
+            Log in
+          </Link>
+          <Link
+            href="/signup?role=donor"
+            className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-cream shadow-soft transition hover:bg-burnt sm:px-5"
+          >
+            Become a donor
+          </Link>
+        </div>
       </div>
     </header>
   );

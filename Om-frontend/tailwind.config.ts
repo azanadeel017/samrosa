@@ -13,6 +13,7 @@ const config: Config = {
         burnt: "#C75B12",
         terracotta: "#CC5A3F",
         surface: "#FFF8EA",
+        error: "#B3261E",
       },
       fontFamily: {
         display: ["var(--font-fraunces)", "Georgia", "serif"],
