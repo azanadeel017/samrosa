@@ -30,7 +30,7 @@ const router = express.Router();
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const VALID_CLASSIFICATIONS = new Set(['PERISHABLE', 'SHELF_STABLE']);
+const VALID_CLASSIFICATIONS = new Set(['BAKERY', 'PRODUCE', 'PREPARED_MEALS', 'DAIRY_MEAT', 'SHELF_STABLE']);
 
 // ─── Validators ───────────────────────────────────────────────────────────────
 

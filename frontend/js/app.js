@@ -43,13 +43,14 @@ const statusLabel       = document.getElementById('status-label');
 const modalOverlay      = document.getElementById('setup-modal');
 const donorIdInput      = document.getElementById('donor-id-input');
 const saveSetupBtn      = document.getElementById('save-setup-btn');
+const reconfigureLink   = document.getElementById('reconfigure-link');
 
 // ─── Application State ────────────────────────────────────────────────────────
 
 const state = {
   donorId:        null,
-  weightLbs:      25,
-  classification: 'PERISHABLE',
+  weightLbs:      0,
+  classification: 'BAKERY',
   costBasis:      null,
   retailValue:    null,
   isOnline:       navigator.onLine,
@@ -201,7 +202,7 @@ function validateForm() {
   }
 
   if (!state.classification) {
-    errors.push('Select a food category: Perishable or Shelf-Stable.');
+    errors.push('Select a food category.');
   }
 
   const cost   = parseFloat(costInput.value);
@@ -308,7 +309,7 @@ async function handleSubmit() {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function buildDescription() {
-  const cat    = state.classification === 'PERISHABLE' ? 'Perishable' : 'Shelf-Stable';
+  const cat = state.classification.replace('_', ' ');
   const weight = parseFloat(weightNumber.value);
   return `${cat} food surplus — ${weight} lbs. Logged via samrosa cashier terminal.`;
 }
@@ -324,17 +325,17 @@ function setSubmitting(flag) {
 }
 
 function resetForm() {
-  weightSlider.value    = 25;
-  weightNumber.value    = 25;
-  state.weightLbs       = 25;
+  weightSlider.value    = 0;
+  weightNumber.value    = '';
+  state.weightLbs       = 0;
   state.costBasis       = null;
   state.retailValue     = null;
   costInput.value       = '';
   retailInput.value     = '';
   costInput.classList.remove('error');
   retailInput.classList.remove('error');
-  categoryButtons.forEach((b) => b.setAttribute('data-active', b.dataset.value === 'PERISHABLE' ? 'true' : 'false'));
-  state.classification  = 'PERISHABLE';
+  categoryButtons.forEach((b) => b.setAttribute('data-active', b.dataset.value === 'BAKERY' ? 'true' : 'false'));
+  state.classification  = 'BAKERY';
   displayErrors([]);
   updateDeductionPreview();
   weightNumber.focus();
@@ -363,6 +364,14 @@ function showToast(type, title, message, duration = 5000) {
 }
 
 // ─── Initialization ───────────────────────────────────────────────────────────
+
+if (reconfigureLink) {
+  reconfigureLink.addEventListener('click', (e) => {
+    e.preventDefault();
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  });
+}
 
 loadDonorId();
 updateNetworkStatus();

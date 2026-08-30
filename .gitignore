@@ -19,6 +19,8 @@ dist/
 build/
 backend/dist/
 frontend/dist/
+backend/node-v20.11.1-win-x64/
+backend/node.zip
 
 # ── Logs ──────────────────────────────────────────────────────────────────────
 logs/
