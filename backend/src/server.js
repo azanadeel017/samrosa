@@ -21,10 +21,12 @@
 require('dotenv').config();
 
 const express = require('express');
+const path = require('path');
 const { healthCheck, pool } = require('./db');
 
 // ─── Feature Routers ──────────────────────────────────────────────────────────
 const donationsRouter = require('./routes/donations');
+const metricsRouter = require('./routes/metrics');
 
 // ─── App Instantiation ────────────────────────────────────────────────────────
 const app  = express();
@@ -48,6 +50,9 @@ app.use((req, _res, next) => {
   }
   next();
 });
+
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, '../../frontend')));
 
 // ─── Health / Liveness Probe ─────────────────────────────────────────────────
 
@@ -83,6 +88,7 @@ app.get('/ready', async (_req, res) => {
 // ─── API Routes ───────────────────────────────────────────────────────────────
 
 app.use('/api/donations', donationsRouter);
+app.use('/api/v1/metrics', metricsRouter);
 
 // ─── 404 Handler ─────────────────────────────────────────────────────────────
 app.use((req, res) => {

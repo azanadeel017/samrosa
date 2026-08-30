@@ -187,8 +187,28 @@ async function markDeliveredAndIssueReceipt({ donationId, donorNetIncome, taxYea
   }
 }
 
-async function getAnnualSummary({ donorEin, taxYear, dbQuery }) {
-  throw new Error('taxEngine.getAnnualSummary: not yet implemented');
+async function aggregateTaxDeductions({ donorId, startDate, endDate }) {
+  const { query } = require('../db');
+  const start = startDate || new Date('2000-01-01');
+  const end = endDate || new Date('2100-01-01');
+
+  const sql = `
+    SELECT 
+      COUNT(*) as total_receipts,
+      SUM(enhanced_deduction) as total_tax_deduction_value
+    FROM tax_receipts
+    WHERE donor_id = $1 AND issued_at >= $2 AND issued_at <= $3
+  `;
+  const res = await query(sql, [donorId, start, end]);
+  const row = res.rows[0];
+
+  return {
+    donorId,
+    periodStart: start,
+    periodEnd: end,
+    totalReceipts: parseInt(row.total_receipts || '0', 10),
+    totalTaxDeductionValue: parseFloat(row.total_tax_deduction_value || '0'),
+  };
 }
 
 module.exports = {
@@ -198,6 +218,6 @@ module.exports = {
   buildReceiptPayload,
   checkQualification,
   markDeliveredAndIssueReceipt,
-  getAnnualSummary,
+  aggregateTaxDeductions,
   NET_INCOME_CEILING_RATE,
 };

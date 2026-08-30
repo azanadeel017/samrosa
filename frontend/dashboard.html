@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+  <title>samrosa — Analytics Dashboard</title>
+  
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+  <style>
+    .dashboard-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .metric-card {
+      background: var(--clr-card);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .metric-label {
+      font-size: 0.875rem;
+      color: var(--clr-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .metric-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--clr-primary);
+    }
+    
+    .metric-value.currency {
+      color: var(--clr-success);
+    }
+    
+    .table-container {
+      background: var(--clr-card);
+      border: 1px solid var(--clr-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+    
+    th, td {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--clr-border);
+    }
+    
+    th {
+      background: rgba(255, 255, 255, 0.02);
+      font-weight: 600;
+      color: var(--clr-text-muted);
+    }
+    
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .nav-link {
+      color: var(--clr-primary);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .nav-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="dashboard-container" role="main">
+
+    <header class="dashboard-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">🌿</div>
+        <span class="brand-name">samrosa ESG Dashboard</span>
+      </div>
+      <a href="/" class="nav-link">← Back to Cashier</a>
+    </header>
+
+    <section aria-labelledby="metrics-label">
+      <h2 id="metrics-label" class="sr-only">Key ESG Metrics</h2>
+      <div class="metrics-grid">
+        
+        <div class="metric-card">
+          <span class="metric-label">Rescued Weight</span>
+          <span class="metric-value" id="val-weight">--</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Estimated § 170(e)(3) Deduction Basis (For CPA Tax Review)</span>
+          <span class="metric-value currency" id="val-tax">--</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">EPA WARM v15-Aligned Impacts (CO₂e Avoided)</span>
+          <span class="metric-value" id="val-co2">--</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Methane Offset</span>
+          <span class="metric-value" id="val-methane">--</span>
+        </div>
+
+        <div class="metric-card">
+          <span class="metric-label">Meals Rescued</span>
+          <span class="metric-value" id="val-meals">--</span>
+        </div>
+
+      </div>
+    </section>
+
+    <section aria-labelledby="history-label">
+      <h3 id="history-label" style="margin-bottom: 1rem;">Recent Transactions</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Category</th>
+              <th>Weight (lbs)</th>
+              <th>Deduction ($)</th>
+            </tr>
+          </thead>
+          <tbody id="history-table-body">
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--clr-text-muted);">Loading data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <p style="font-size: 0.8rem; color: var(--clr-text-muted); text-align: center; margin-top: 2rem;">
+      * Estimates provided for documentation and tax professional review. Final determinations made by the merchant's licensed CPA.
+    </p>
+
+  </main>
+
+  <!-- Toast Notification Layer -->
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Application Script -->
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

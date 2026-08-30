@@ -11,7 +11,10 @@ const { getClient, query } = require('../db');
 const BASE_CO2E_PER_LB = 2.0;
 
 const CATEGORY_MULTIPLIERS = {
-  PERISHABLE: 1.2,
+  BAKERY: 1.0,
+  PRODUCE: 1.1,
+  PREPARED_MEALS: 1.2,
+  DAIRY_MEAT: 1.3,
   SHELF_STABLE: 1.0,
 };
 
@@ -24,16 +27,22 @@ function computeEmissionsAvoidance({ weightLbs, classification }) {
   
   const multiplier = CATEGORY_MULTIPLIERS[classification];
   if (!multiplier) {
-    throw new TypeError(`Unknown classification: '${classification}'. Expected PERISHABLE or SHELF_STABLE.`);
+    throw new TypeError(`Unknown classification: '${classification}'. Expected BAKERY, PRODUCE, PREPARED_MEALS, DAIRY_MEAT, or SHELF_STABLE.`);
   }
 
   const avoidedEmissionsLbs = weightLbs * BASE_CO2E_PER_LB * multiplier;
+  const avoidedEmissionsKg = avoidedEmissionsLbs * 0.453592;
+  const methaneAvoidedKg = avoidedEmissionsKg / 28.0; // Global Warming Potential for Methane is ~28
+  const mealsEquivalent = Math.floor(weightLbs / 1.2);
 
   return {
     weightLbs: parseFloat(weightLbs.toFixed(2)),
     classification,
     multiplier,
-    avoidedEmissionsLbs: parseFloat(avoidedEmissionsLbs.toFixed(2))
+    avoidedEmissionsLbs: parseFloat(avoidedEmissionsLbs.toFixed(2)),
+    avoidedEmissionsKg: parseFloat(avoidedEmissionsKg.toFixed(2)),
+    methaneAvoidedKg: parseFloat(methaneAvoidedKg.toFixed(2)),
+    mealsEquivalent,
   };
 }
 
@@ -42,24 +51,32 @@ function computeEmissionsAvoidance({ weightLbs, classification }) {
  * over a customizable date range. Used for period-level ESG reporting.
  */
 async function aggregateEmissionsAvoidance({ donorId, startDate, endDate }) {
+  // Use a default date range if none provided
+  const start = startDate || new Date('2000-01-01');
+  const end = endDate || new Date('2100-01-01');
+
   const sql = `
     SELECT 
       COUNT(*) as total_donations,
       SUM(weight_lbs) as total_weight_lbs,
-      SUM(avoided_co2e_lbs) as total_avoided_co2e_lbs
+      SUM(avoided_co2e_lbs) as total_avoided_co2e_lbs,
+      SUM(methane_avoided_kg) as total_methane_avoided_kg,
+      SUM(meals_equivalent) as total_meals_equivalent
     FROM carbon_metrics
     WHERE donor_id = $1 AND created_at >= $2 AND created_at <= $3
   `;
-  const res = await query(sql, [donorId, startDate, endDate]);
+  const res = await query(sql, [donorId, start, end]);
   const row = res.rows[0];
 
   return {
     donorId,
-    periodStart: startDate,
-    periodEnd: endDate,
+    periodStart: start,
+    periodEnd: end,
     totalDonations: parseInt(row.total_donations || '0', 10),
     totalWeightLbs: parseFloat(row.total_weight_lbs || '0'),
-    totalAvoidedCO2eLbs: parseFloat(row.total_avoided_co2e_lbs || '0')
+    totalAvoidedCO2eLbs: parseFloat(row.total_avoided_co2e_lbs || '0'),
+    totalMethaneAvoidedKg: parseFloat(row.total_methane_avoided_kg || '0'),
+    totalMealsEquivalent: parseInt(row.total_meals_equivalent || '0', 10),
   };
 }
 
@@ -75,6 +92,8 @@ function submitCarbonCreditClaim({ registryId, aggregation, donorEin }) {
     methodology: 'EPA WARM v15 - Landfill Diversion',
     project_type: 'Food Waste Diversion',
     total_avoided_co2e_lbs: aggregation.totalAvoidedCO2eLbs,
+    total_methane_avoided_kg: aggregation.totalMethaneAvoidedKg,
+    total_meals_equivalent: aggregation.totalMealsEquivalent,
     reporting_period: {
       start: aggregation.periodStart,
       end: aggregation.periodEnd,
@@ -109,8 +128,8 @@ async function logCarbonMetricsForDonation(donationId) {
     });
 
     const insertSql = `
-      INSERT INTO carbon_metrics (donation_id, donor_id, weight_lbs, classification, avoided_co2e_lbs)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO carbon_metrics (donation_id, donor_id, weight_lbs, classification, avoided_co2e_lbs, methane_avoided_kg, meals_equivalent)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (donation_id) DO NOTHING
       RETURNING *;
     `;
@@ -120,7 +139,9 @@ async function logCarbonMetricsForDonation(donationId) {
       donation.donor_id,
       metrics.weightLbs,
       metrics.classification,
-      metrics.avoidedEmissionsLbs
+      metrics.avoidedEmissionsLbs,
+      metrics.methaneAvoidedKg,
+      metrics.mealsEquivalent
     ];
 
     const res = await client.query(insertSql, insertVals);

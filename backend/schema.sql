@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS donations (
 
   -- ── Domain Constraints ────────────────────────────────────────────────────
   CONSTRAINT donations_classification_values
-    CHECK (classification IN ('PERISHABLE', 'SHELF_STABLE')),
+    CHECK (classification IN ('BAKERY', 'PRODUCE', 'PREPARED_MEALS', 'DAIRY_MEAT', 'SHELF_STABLE')),
 
   CONSTRAINT donations_status_values
     CHECK (status IN ('PENDING', 'MATCHED', 'IN_TRANSIT', 'DELIVERED', 'RECEIPT_ISSUED', 'VOIDED')),
@@ -251,13 +251,19 @@ CREATE TABLE IF NOT EXISTS carbon_metrics (
   weight_lbs          NUMERIC(10,3) NOT NULL,
   classification      VARCHAR(20)   NOT NULL,
   avoided_co2e_lbs    NUMERIC(12,2) NOT NULL,
+  methane_avoided_kg  NUMERIC(12,2) NOT NULL,
+  meals_equivalent    INTEGER       NOT NULL,
   registry_status     VARCHAR(50)   NOT NULL DEFAULT 'PENDING',
   created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
 
   CONSTRAINT carbon_metrics_weight_positive
     CHECK (weight_lbs > 0),
   CONSTRAINT carbon_metrics_avoided_co2e_positive
-    CHECK (avoided_co2e_lbs > 0)
+    CHECK (avoided_co2e_lbs > 0),
+  CONSTRAINT carbon_metrics_methane_avoided_positive
+    CHECK (methane_avoided_kg > 0),
+  CONSTRAINT carbon_metrics_meals_equivalent_positive
+    CHECK (meals_equivalent > 0)
 );
 
 CREATE INDEX IF NOT EXISTS idx_carbon_metrics_donor_id ON carbon_metrics (donor_id);
