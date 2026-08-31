@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -58,6 +59,17 @@ export default function RootLayout({
           Skip to content
         </a>
         {children}
+        <Toaster
+          position="bottom-right"
+          toastOptions={{
+            style: {
+              background: "#FFF8EA",
+              color: "#3A2417",
+              border: "1px solid rgba(58,36,23,0.1)",
+              fontFamily: "'General Sans', system-ui, sans-serif",
+            },
+          }}
+        />
       </body>
     </html>
   );

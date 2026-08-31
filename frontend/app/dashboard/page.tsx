@@ -1,6 +1,25 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
+import {
+  Scale,
+  Utensils,
+  BadgeDollarSign,
+  Wind,
+  FlaskConical,
+  TrendingUp,
+} from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import NavBar from "@/components/NavBar";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
@@ -31,13 +50,17 @@ type Metrics = {
 const STORE_ID = "28f86d0d-9f36-4b5c-b97c-353a493cd3e9";
 const API_BASE = "";
 
-const CATEGORY_EMOJI: Record<string, string> = {
-  BAKERY: "🥖",
-  PRODUCE: "🥦",
-  PREPARED_MEALS: "🍱",
-  DAIRY_MEAT: "🥩",
-  SHELF_STABLE: "🥫",
-};
+/* ─── Mock weekly chart data ─────────────────────────────────────────────────── */
+
+const WEEKLY_DATA = [
+  { day: "Mon", lbs: 42 },
+  { day: "Tue", lbs: 78 },
+  { day: "Wed", lbs: 55 },
+  { day: "Thu", lbs: 91 },
+  { day: "Fri", lbs: 134 },
+  { day: "Sat", lbs: 67 },
+  { day: "Sun", lbs: 28 },
+];
 
 /* ─── Helpers ───────────────────────────────────────────────────────────────── */
 
@@ -49,7 +72,13 @@ function safe(val: unknown, decimals = 0): string {
 function fmtUsd(val: unknown): string {
   const n = Number(val || 0);
   if (!Number.isFinite(n)) return "$0.00";
-  return "$" + n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (
+    "$" +
+    n.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
 }
 
 function fmtNum(val: unknown): string {
@@ -58,7 +87,9 @@ function fmtNum(val: unknown): string {
 }
 
 function prettyCategory(raw: string): string {
-  return (raw || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return (raw || "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /* ─── CSV Export ─────────────────────────────────────────────────────────────── */
@@ -77,7 +108,6 @@ function downloadCsv(donations: Donation[]) {
     "Meals Equivalent",
     "Recipient Organization (501c3)",
   ];
-
   const rows = donations.map((d) => [
     d.id,
     d.date ? new Date(d.date).toLocaleDateString() : "N/A",
@@ -91,12 +121,10 @@ function downloadCsv(donations: Donation[]) {
     safe(d.meals_equivalent),
     d.recipient_name || "N/A",
   ]);
-
   const disclaimer = [
     "",
     "DISCLAIMER: Estimates provided for documentation and tax professional review. Final determinations made by the merchant's licensed CPA.",
   ];
-
   const csv = [
     headers.join(","),
     ...rows.map((r) => r.map((c) => `"${c}"`).join(",")),
@@ -112,6 +140,36 @@ function downloadCsv(donations: Donation[]) {
   URL.revokeObjectURL(url);
 }
 
+/* ─── Animation variants ─────────────────────────────────────────────────────── */
+
+const containerVariants = {
+  hidden: {},
+  show: {
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
+};
+
+/* ─── Custom tooltip for chart ───────────────────────────────────────────────── */
+
+function CustomTooltip({ active, payload, label }: {
+  active?: boolean;
+  payload?: Array<{ value: number }>;
+  label?: string;
+}) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-xl border border-ink/10 bg-white/95 px-3 py-2 shadow-soft backdrop-blur text-sm">
+      <p className="font-semibold text-ink">{label}</p>
+      <p className="text-burnt">{payload[0].value} lbs rescued</p>
+    </div>
+  );
+}
+
 /* ─── Component ─────────────────────────────────────────────────────────────── */
 
 export default function Dashboard() {
@@ -122,13 +180,16 @@ export default function Dashboard() {
   useEffect(() => {
     async function loadMetrics() {
       try {
-        const res = await fetch(`${API_BASE}/api/v1/metrics/summary/${STORE_ID}`);
+        const res = await fetch(
+          `${API_BASE}/api/v1/metrics/summary/${STORE_ID}`
+        );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         setMetrics(json.data);
       } catch (err) {
         console.error("[dashboard] fetch error:", err);
         setError("Backend offline — metrics unavailable");
+        toast.error("Could not connect to backend API");
       } finally {
         setLoading(false);
       }
@@ -137,23 +198,53 @@ export default function Dashboard() {
   }, []);
 
   const handleExport = useCallback(() => {
-    if (metrics?.recentDonations) downloadCsv(metrics.recentDonations);
+    if (metrics?.recentDonations) {
+      downloadCsv(metrics.recentDonations);
+      toast.success("CSV exported!");
+    }
   }, [metrics]);
 
-  /* ─── Metric card data ────────────────────────────────────────────────────── */
+  /* ─── Metric card config ──────────────────────────────────────────────────── */
   const cards = metrics
     ? [
-        { label: "Rescued Weight",          value: `${fmtNum(metrics.totalRescuedWeightLbs)} lbs`, accent: false },
-        { label: "Meals Rescued",           value: fmtNum(metrics.totalMealsEquivalent),           accent: false },
-        { label: "Est. §170(e)(3) Deduction", value: fmtUsd(metrics.totalTaxDeductionValue),       accent: true },
-        { label: "CO₂e Avoided",            value: `${fmtNum(Math.round(Number(metrics.totalAvoidedCO2eKg || 0)))} kg`, accent: false },
-        { label: "Methane Offset",          value: `${fmtNum(Math.round(Number(metrics.totalMethaneAvoidedKg || 0)))} kg`, accent: false },
+        {
+          label: "Rescued Weight",
+          value: `${fmtNum(metrics.totalRescuedWeightLbs)} lbs`,
+          icon: Scale,
+          accent: false,
+        },
+        {
+          label: "Meals Rescued",
+          value: fmtNum(metrics.totalMealsEquivalent),
+          icon: Utensils,
+          accent: false,
+        },
+        {
+          label: "Est. §170(e)(3) Deduction",
+          value: fmtUsd(metrics.totalTaxDeductionValue),
+          icon: BadgeDollarSign,
+          accent: true,
+        },
+        {
+          label: "CO₂e Avoided",
+          value: `${fmtNum(Math.round(Number(metrics.totalAvoidedCO2eKg || 0)))} kg`,
+          icon: Wind,
+          accent: false,
+        },
+        {
+          label: "Methane Offset",
+          value: `${fmtNum(Math.round(Number(metrics.totalMethaneAvoidedKg || 0)))} kg`,
+          icon: FlaskConical,
+          accent: false,
+        },
       ]
     : [];
 
   return (
     <>
-      <NavBar onExport={metrics?.recentDonations?.length ? handleExport : undefined} />
+      <NavBar
+        onExport={metrics?.recentDonations?.length ? handleExport : undefined}
+      />
 
       <main id="main" className="mx-auto max-w-6xl px-6 py-8">
         {/* Title */}
@@ -191,28 +282,92 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Metric cards */}
+        {/* Metric cards — stagger-fade in */}
         {metrics && (
           <>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-              {cards.map((card) => (
-                <div
-                  key={card.label}
-                  className="rounded-2xl border border-ink/8 bg-white/80 p-5 shadow-soft backdrop-blur"
-                >
-                  <p className="text-xs font-semibold uppercase tracking-wider text-ink/50">
-                    {card.label}
-                  </p>
-                  <p
-                    className={`mt-2 text-2xl font-bold ${
-                      card.accent ? "text-burnt" : "text-ink"
-                    }`}
+            <motion.div
+              className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5"
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+            >
+              {cards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <motion.div
+                    key={card.label}
+                    variants={cardVariants}
+                    className="rounded-2xl border border-ink/8 bg-white/80 p-5 shadow-soft backdrop-blur"
                   >
-                    {card.value}
-                  </p>
-                </div>
-              ))}
-            </div>
+                    <div className="mb-3 flex items-center gap-2">
+                      <Icon
+                        size={16}
+                        className={card.accent ? "text-burnt" : "text-ink/40"}
+                      />
+                      <p className="text-xs font-semibold uppercase tracking-wider text-ink/50">
+                        {card.label}
+                      </p>
+                    </div>
+                    <p
+                      className={`text-2xl font-bold ${
+                        card.accent ? "text-burnt" : "text-ink"
+                      }`}
+                    >
+                      {card.value}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+
+            {/* Weekly Bar Chart */}
+            <motion.section
+              className="mt-10 rounded-2xl border border-ink/8 bg-white/80 p-6 shadow-soft backdrop-blur"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.5, ease: "easeOut" }}
+            >
+              <div className="mb-5 flex items-center gap-2">
+                <TrendingUp size={18} className="text-burnt" />
+                <h2 className="font-display text-lg font-semibold text-ink">
+                  Last 7 Days of Waste Diverted
+                </h2>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart
+                  data={WEEKLY_DATA}
+                  barSize={32}
+                  margin={{ top: 4, right: 4, left: -16, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="rgba(58,36,23,0.06)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="day"
+                    tick={{ fontSize: 12, fill: "rgba(58,36,23,0.5)" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 12, fill: "rgba(58,36,23,0.5)" }}
+                    axisLine={false}
+                    tickLine={false}
+                    unit=" lbs"
+                  />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(199,91,18,0.06)" }} />
+                  <Bar
+                    dataKey="lbs"
+                    fill="#C75B12"
+                    radius={[6, 6, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="mt-2 text-xs text-ink/35">
+                Sample data · Connect to live database for real trend
+              </p>
+            </motion.section>
 
             {/* Transaction table */}
             <section className="mt-10">
@@ -227,9 +382,9 @@ export default function Dashboard() {
                       <tr className="border-b border-ink/8 bg-ink/[0.02]">
                         <th className="px-5 py-3 font-semibold text-ink/50">Date</th>
                         <th className="px-5 py-3 font-semibold text-ink/50">Category</th>
-                        <th className="px-5 py-3 font-semibold text-ink/50 text-right">Weight (lbs)</th>
-                        <th className="px-5 py-3 font-semibold text-ink/50 text-right">Deduction ($)</th>
-                        <th className="px-5 py-3 font-semibold text-ink/50 text-right">CO₂e (kg)</th>
+                        <th className="px-5 py-3 text-right font-semibold text-ink/50">Weight (lbs)</th>
+                        <th className="px-5 py-3 text-right font-semibold text-ink/50">Deduction ($)</th>
+                        <th className="px-5 py-3 text-right font-semibold text-ink/50">CO₂e (kg)</th>
                         <th className="px-5 py-3 font-semibold text-ink/50">Recipient</th>
                       </tr>
                     </thead>
@@ -245,13 +400,8 @@ export default function Dashboard() {
                                 ? new Date(tx.date).toLocaleDateString()
                                 : "—"}
                             </td>
-                            <td className="px-5 py-3">
-                              <span className="inline-flex items-center gap-1.5">
-                                <span aria-hidden>{CATEGORY_EMOJI[tx.classification] || "📦"}</span>
-                                <span className="font-medium text-ink">
-                                  {prettyCategory(tx.classification)}
-                                </span>
-                              </span>
+                            <td className="px-5 py-3 font-medium text-ink">
+                              {prettyCategory(tx.classification)}
                             </td>
                             <td className="px-5 py-3 text-right font-medium text-ink">
                               {safe(tx.weight_lbs, 1)}
@@ -282,7 +432,6 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {/* Disclaimer */}
               <p className="mt-3 text-xs text-ink/40">
                 Estimates provided for documentation and tax professional review.
                 Final determinations made by the merchant&apos;s licensed CPA.

@@ -1,6 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
+import {
+  Croissant,
+  Leaf,
+  UtensilsCrossed,
+  Beef,
+  Package,
+  Send,
+  Loader2,
+} from "lucide-react";
 import NavBar from "@/components/NavBar";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
@@ -15,34 +26,29 @@ type Preset = {
 };
 
 const CATEGORIES = [
-  { value: "BAKERY", label: "Bakery", emoji: "🥖" },
-  { value: "PRODUCE", label: "Produce", emoji: "🥦" },
-  { value: "PREPARED_MEALS", label: "Prepared Meals", emoji: "🍱" },
-  { value: "DAIRY_MEAT", label: "Dairy / Meat", emoji: "🥩" },
-  { value: "SHELF_STABLE", label: "Shelf-Stable", emoji: "🥫" },
+  { value: "BAKERY",         label: "Bakery",         Icon: Croissant },
+  { value: "PRODUCE",        label: "Produce",        Icon: Leaf },
+  { value: "PREPARED_MEALS", label: "Prepared Meals", Icon: UtensilsCrossed },
+  { value: "DAIRY_MEAT",     label: "Dairy / Meat",   Icon: Beef },
+  { value: "SHELF_STABLE",   label: "Shelf-Stable",   Icon: Package },
 ] as const;
 
 const STORE_ID = "28f86d0d-9f36-4b5c-b97c-353a493cd3e9";
-const API_BASE = "";
-const LS_KEY = "samrosa_item_presets";
+const API_BASE  = "";
+const LS_KEY    = "samrosa_item_presets";
 
 /* ─── Component ─────────────────────────────────────────────────────────────── */
 
 export default function QuickLogPage() {
-  /* Presets from localStorage */
-  const [presets, setPresets] = useState<Preset[]>([]);
+  const [presets, setPresets]           = useState<Preset[]>([]);
   const [activePreset, setActivePreset] = useState<Preset | null>(null);
 
-  /* Form fields */
-  const [category, setCategory] = useState("BAKERY");
-  const [weight, setWeight] = useState("");
-  const [costBasis, setCostBasis] = useState("");
-  const [retailValue, setRetailValue] = useState("");
-  const [description, setDescription] = useState("");
-
-  /* UI state */
-  const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [category,     setCategory]     = useState("BAKERY");
+  const [weight,       setWeight]       = useState("");
+  const [costBasis,    setCostBasis]    = useState("");
+  const [retailValue,  setRetailValue]  = useState("");
+  const [description,  setDescription]  = useState("");
+  const [submitting,   setSubmitting]   = useState(false);
 
   useEffect(() => {
     try {
@@ -66,30 +72,29 @@ export default function QuickLogPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setToast(null);
 
     const w = parseFloat(weight);
     const c = parseFloat(costBasis);
     const r = parseFloat(retailValue);
 
     if (!Number.isFinite(w) || w <= 0) {
-      setToast({ type: "error", text: "Enter a valid weight > 0." });
+      toast.error("Enter a valid weight > 0.");
       return;
     }
     if (!Number.isFinite(c) || c < 0) {
-      setToast({ type: "error", text: "Enter a valid cost basis ≥ $0." });
+      toast.error("Enter a valid cost basis ≥ $0.");
       return;
     }
     if (!Number.isFinite(r) || r <= 0) {
-      setToast({ type: "error", text: "Enter a valid retail value > $0." });
+      toast.error("Enter a valid retail value > $0.");
       return;
     }
     if (c > r) {
-      setToast({ type: "error", text: "Cost basis cannot exceed retail value." });
+      toast.error("Cost basis cannot exceed retail value.");
       return;
     }
     if (!description.trim() || description.trim().length < 3) {
-      setToast({ type: "error", text: "Description must be at least 3 characters." });
+      toast.error("Description must be at least 3 characters.");
       return;
     }
 
@@ -100,12 +105,12 @@ export default function QuickLogPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          donor_id: STORE_ID,
-          description: description.trim(),
-          classification: category,
+          donor_id:         STORE_ID,
+          description:      description.trim(),
+          classification:   category,
           total_weight_lbs: w,
-          cost_basis: c,
-          retail_value: r,
+          cost_basis:       c,
+          retail_value:     r,
         }),
       });
 
@@ -113,31 +118,28 @@ export default function QuickLogPage() {
 
       if (res.ok && data.success) {
         const deduction = Number(data.enhanced_deduction || 0).toFixed(2);
-        setToast({
-          type: "success",
-          text: `✅ Logged! Enhanced deduction: $${deduction}`,
-        });
-        // Reset form
+        toast.success(`Donation logged! Est. deduction: $${deduction}`);
         setWeight("");
         setCostBasis(activePreset ? activePreset.costBasis.toFixed(2) : "");
         setRetailValue(activePreset ? activePreset.retailValue.toFixed(2) : "");
         if (!activePreset) setDescription("");
       } else {
-        setToast({
-          type: "error",
-          text: data.error || data.details?.join("; ") || "Submission failed.",
-        });
+        toast.error(data.error || data.details?.join("; ") || "Submission failed.");
       }
     } catch (err) {
       console.error("[log] submit error:", err);
-      setToast({ type: "error", text: "Network error — is the backend running?" });
+      toast.error("Network error — is the backend running?");
     } finally {
       setSubmitting(false);
     }
   }
 
-  const catEmoji = (cat: string) =>
-    CATEGORIES.find((c) => c.value === cat)?.emoji || "📦";
+  const catIcon = (cat: string) => {
+    const match = CATEGORIES.find((c) => c.value === cat);
+    if (!match) return <Package size={14} />;
+    const Icon = match.Icon;
+    return <Icon size={14} />;
+  };
 
   return (
     <>
@@ -151,19 +153,6 @@ export default function QuickLogPage() {
           Tap a preset, enter the weight, and submit in 5 seconds.
         </p>
 
-        {/* Toast */}
-        {toast && (
-          <div
-            className={`mt-4 rounded-xl px-5 py-3 text-sm font-medium ${
-              toast.type === "success"
-                ? "bg-green-50 text-green-800 border border-green-200"
-                : "bg-error/10 text-error border border-error/20"
-            }`}
-          >
-            {toast.text}
-          </div>
-        )}
-
         {/* Preset quick-buttons */}
         {presets.length > 0 && (
           <section className="mt-6">
@@ -174,18 +163,20 @@ export default function QuickLogPage() {
               {presets.map((p) => {
                 const isActive = activePreset?.id === p.id;
                 return (
-                  <button
+                  <motion.button
                     key={p.id}
                     type="button"
                     onClick={() => selectPreset(p)}
-                    className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+                    whileTap={{ scale: 0.95 }}
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition ${
                       isActive
                         ? "border-burnt bg-burnt text-cream shadow-soft"
                         : "border-ink/12 bg-white text-ink hover:border-burnt/40 hover:bg-burnt/5"
                     }`}
                   >
-                    {catEmoji(p.category)} {p.name}
-                  </button>
+                    {catIcon(p.category)}
+                    {p.name}
+                  </motion.button>
                 );
               })}
             </div>
@@ -221,7 +212,7 @@ export default function QuickLogPage() {
               >
                 {CATEGORIES.map((c) => (
                   <option key={c.value} value={c.value}>
-                    {c.emoji} {c.label}
+                    {c.label}
                   </option>
                 ))}
               </select>
@@ -291,20 +282,22 @@ export default function QuickLogPage() {
             </div>
           </div>
 
-          {/* Submit */}
-          <button
+          {/* Submit — framer motion tap animation */}
+          <motion.button
             type="submit"
             disabled={submitting}
-            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-burnt py-4 text-lg font-semibold text-cream shadow-raised transition hover:bg-terracotta disabled:cursor-not-allowed disabled:opacity-60"
+            whileTap={{ scale: submitting ? 1 : 0.97 }}
+            whileHover={{ scale: submitting ? 1 : 1.01 }}
+            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-burnt py-4 text-lg font-semibold text-cream shadow-raised transition-colors hover:bg-terracotta disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {submitting && (
-              <span
-                aria-hidden
-                className="h-5 w-5 animate-spin rounded-full border-2 border-cream/40 border-t-cream"
-              />
+            {submitting ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : (
+              <Send size={18} />
             )}
             {submitting ? "Logging…" : "Submit Batch"}
-          </button>
+          </motion.button>
         </form>
       </main>
     </>
