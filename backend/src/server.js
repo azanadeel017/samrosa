@@ -34,8 +34,11 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 
 // ─── Global Middleware ────────────────────────────────────────────────────────
 
-const cors = require('cors');
-app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:5000'] }));
+// CORS only needed for local dev (Next.js dev server on port 3000)
+if (process.env.NODE_ENV !== 'production') {
+  const cors = require('cors');
+  app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:5000'] }));
+}
 
 // Parse incoming JSON payloads (max 1 MB to prevent body-bomb DoS)
 app.use(express.json({ limit: '1mb' }));
@@ -54,8 +57,9 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Note: Frontend is now served by the Next.js dev server (Om-frontend) on port 3000.
-// Express serves only the API on port 5000.
+// Serve Next.js static export (frontend/out/) in production
+const FRONTEND_DIR = path.join(__dirname, '../../frontend/out');
+app.use(express.static(FRONTEND_DIR));
 
 // ─── Health / Liveness Probe ─────────────────────────────────────────────────
 
@@ -93,12 +97,30 @@ app.get('/ready', async (_req, res) => {
 app.use('/api/donations', donationsRouter);
 app.use('/api/v1/metrics', metricsRouter);
 
-// ─── 404 Handler ─────────────────────────────────────────────────────────────
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error:   `Route not found: ${req.method} ${req.originalUrl}`,
-  });
+// ─── SPA Fallback ────────────────────────────────────────────────────────────
+// For any non-API route, serve the Next.js page if it exists, otherwise index.html
+const fs = require('fs');
+app.use((req, res, next) => {
+  // Don't intercept API routes
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ success: false, error: `Route not found: ${req.method} ${req.originalUrl}` });
+  }
+  // Try to serve the specific page (e.g. /dashboard -> /dashboard.html)
+  const pagePath = path.join(FRONTEND_DIR, req.path + '.html');
+  if (fs.existsSync(pagePath)) {
+    return res.sendFile(pagePath);
+  }
+  // Try index.html inside a directory (e.g. /dashboard -> /dashboard/index.html)
+  const dirIndex = path.join(FRONTEND_DIR, req.path, 'index.html');
+  if (fs.existsSync(dirIndex)) {
+    return res.sendFile(dirIndex);
+  }
+  // Fallback to root index.html for client-side routing
+  const rootIndex = path.join(FRONTEND_DIR, 'index.html');
+  if (fs.existsSync(rootIndex)) {
+    return res.sendFile(rootIndex);
+  }
+  res.status(404).json({ success: false, error: 'Not found' });
 });
 
 // ─── Global Error Handler ─────────────────────────────────────────────────────
