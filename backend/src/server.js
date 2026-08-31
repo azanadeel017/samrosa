@@ -54,8 +54,8 @@ app.use((req, _res, next) => {
   next();
 });
 
-// Serve frontend static files
-app.use(express.static(path.join(__dirname, '../../frontend')));
+// Note: Frontend is now served by the Next.js dev server (Om-frontend) on port 3000.
+// Express serves only the API on port 5000.
 
 // ─── Health / Liveness Probe ─────────────────────────────────────────────────
 
