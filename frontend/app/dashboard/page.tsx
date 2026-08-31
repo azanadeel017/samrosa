@@ -29,7 +29,7 @@ type Metrics = {
 };
 
 const STORE_ID = "28f86d0d-9f36-4b5c-b97c-353a493cd3e9";
-const API_BASE = "http://localhost:5000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const CATEGORY_EMOJI: Record<string, string> = {
   BAKERY: "🥖",
