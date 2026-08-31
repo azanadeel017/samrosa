@@ -1,8 +1,8 @@
 # ── Dependencies (both packages) ─────────────────────────────────────────────
 node_modules/
 backend/node_modules/
-Om-frontend/node_modules/
-Om-frontend/.next/
+frontend/node_modules/
+frontend/.next/
 
 # ── Local tool/agent config ──────────────────────────────────────────────────
 .claude/
@@ -12,14 +12,14 @@ Om-frontend/.next/
 .env.local
 .env.*.local
 backend/.env
-Om-frontend/.env
-Om-frontend/.env.local
+frontend/.env
+frontend/.env.local
 
 # ── Build Artifacts ───────────────────────────────────────────────────────────
 dist/
 build/
 backend/dist/
-Om-frontend/.next/
+frontend/.next/
 backend/node-v20.11.1-win-x64/
 backend/node.zip
 
