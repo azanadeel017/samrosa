@@ -16,7 +16,9 @@
 
 -- ── Extensions ────────────────────────────────────────────────────────────────
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";   -- gen_random_uuid()
-CREATE EXTENSION IF NOT EXISTS "btree_gin";  -- composite GIN indices
+CREATE SCHEMA IF NOT EXISTS extensions;
+CREATE EXTENSION IF NOT EXISTS "btree_gin" WITH SCHEMA extensions;
+ALTER EXTENSION btree_gin SET SCHEMA extensions;
 
 -- ── Shared audit-timestamp trigger function ───────────────────────────────────
 CREATE OR REPLACE FUNCTION public.set_updated_at()
@@ -30,6 +32,9 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+REVOKE EXECUTE ON FUNCTION public.set_updated_at() FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION public.set_updated_at() FROM anon, authenticated;
 
 -- =============================================================================
 -- TABLE: donors
@@ -341,6 +346,14 @@ DROP POLICY IF EXISTS "Users can view own carbon metrics" ON public.carbon_metri
 CREATE POLICY "Users can view own carbon metrics" ON public.carbon_metrics FOR SELECT USING (
   (SELECT auth.uid()) = donor_id
 );
+
+-- Recipients Policies
+DROP POLICY IF EXISTS "Authenticated users can view active recipients" ON public.recipients;
+CREATE POLICY "Authenticated users can view active recipients"
+  ON public.recipients
+  FOR SELECT
+  TO authenticated
+  USING (is_active = true);
 
 -- =============================================================================
 -- End of schema
