@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { LogOut } from "lucide-react";
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -15,6 +17,7 @@ export default function NavBar({
   onExport?: () => void;
 }) {
   const pathname = usePathname();
+  const { user, storeId, logout } = useAuth();
 
   return (
     <nav className="sticky top-0 z-40 border-b border-ink/8 bg-white/80 backdrop-blur-lg">
@@ -61,6 +64,25 @@ export default function NavBar({
             >
               Export CSV
             </button>
+          )}
+
+          {user || storeId ? (
+            <button
+              type="button"
+              onClick={() => logout()}
+              title="Log out"
+              className="ml-1 inline-flex items-center gap-1 rounded-lg p-2 text-sm text-ink/50 hover:bg-ink/5 hover:text-ink transition-colors"
+            >
+              <LogOut size={16} />
+              <span className="hidden sm:inline text-xs">Log out</span>
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="ml-2 rounded-full border border-ink/15 px-3.5 py-1.5 text-xs font-medium text-ink hover:bg-burnt hover:text-cream hover:border-burnt transition"
+            >
+              Log in
+            </Link>
           )}
         </div>
       </div>

@@ -13,6 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import NavBar from "@/components/NavBar";
+import { useRequireAuth } from "@/context/AuthContext";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
 
@@ -33,12 +34,12 @@ const CATEGORIES = [
   { value: "SHELF_STABLE",   label: "Shelf-Stable",   Icon: Package },
 ] as const;
 
-const STORE_ID = "28f86d0d-9f36-4b5c-b97c-353a493cd3e9";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 /* ─── Component ─────────────────────────────────────────────────────────────── */
 
 export default function QuickLogPage() {
+  const { storeId, businessName } = useRequireAuth();
   const [presets, setPresets]           = useState<Preset[]>([]);
   const [presetsLoading, setPresetsLoading] = useState(true);
   const [activePreset, setActivePreset] = useState<Preset | null>(null);
@@ -53,9 +54,12 @@ export default function QuickLogPage() {
   /* ─── Fetch presets from API ──────────────────────────────────────────────── */
 
   useEffect(() => {
+    if (!storeId) return;
+
     async function loadPresets() {
       try {
-        const res = await fetch(`${API_BASE}/api/v1/presets/${STORE_ID}`);
+        setPresetsLoading(true);
+        const res = await fetch(`${API_BASE}/api/v1/presets/${storeId}`);
         const json = await res.json();
         if (json.success) setPresets(json.data);
       } catch (err) {
@@ -65,7 +69,7 @@ export default function QuickLogPage() {
       }
     }
     loadPresets();
-  }, []);
+  }, [storeId]);
 
   /* ─── Preset selection ────────────────────────────────────────────────────── */
 
@@ -107,6 +111,11 @@ export default function QuickLogPage() {
       return;
     }
 
+    if (!storeId) {
+      toast.error("Store session not found. Please log in again.");
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -114,7 +123,7 @@ export default function QuickLogPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          donor_id:         STORE_ID,
+          donor_id:         storeId,
           description:      description.trim(),
           classification:   category,
           total_weight_lbs: w,
@@ -155,9 +164,16 @@ export default function QuickLogPage() {
       <NavBar />
 
       <main id="main" className="mx-auto max-w-3xl px-6 py-8">
-        <h1 className="font-display text-3xl font-bold tracking-tightest text-ink">
-          Quick Log
-        </h1>
+        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between">
+          <h1 className="font-display text-3xl font-bold tracking-tightest text-ink">
+            Quick Log
+          </h1>
+          {businessName && (
+            <span className="text-sm font-medium text-burnt">
+              {businessName}
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-ink/65">
           Tap a preset, enter the weight, and submit in 5 seconds.
         </p>

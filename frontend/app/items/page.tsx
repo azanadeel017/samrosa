@@ -13,6 +13,7 @@ import {
   Loader2,
 } from "lucide-react";
 import NavBar from "@/components/NavBar";
+import { useRequireAuth } from "@/context/AuthContext";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
 
@@ -34,12 +35,12 @@ const CATEGORIES = [
   { value: "SHELF_STABLE",   label: "Shelf-Stable",   Icon: Package },
 ] as const;
 
-const STORE_ID = "28f86d0d-9f36-4b5c-b97c-353a493cd3e9";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 /* ─── Component ─────────────────────────────────────────────────────────────── */
 
 export default function ItemPresetsPage() {
+  const { storeId, businessName } = useRequireAuth();
   const [presets, setPresets] = useState<Preset[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -53,8 +54,10 @@ export default function ItemPresetsPage() {
   /* ─── Fetch presets from API ──────────────────────────────────────────────── */
 
   const loadPresets = useCallback(async () => {
+    if (!storeId) return;
     try {
-      const res = await fetch(`${API_BASE}/api/v1/presets/${STORE_ID}`);
+      setLoading(true);
+      const res = await fetch(`${API_BASE}/api/v1/presets/${storeId}`);
       const json = await res.json();
       if (json.success) setPresets(json.data);
     } catch (err) {
@@ -63,7 +66,7 @@ export default function ItemPresetsPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [storeId]);
 
   useEffect(() => {
     loadPresets();
@@ -73,6 +76,11 @@ export default function ItemPresetsPage() {
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!storeId) {
+      toast.error("Store session not found. Please log in again.");
+      return;
+    }
 
     if (!name.trim()) { toast.error("Item name is required."); return; }
     const cost   = parseFloat(costBasis);
@@ -87,7 +95,7 @@ export default function ItemPresetsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          store_id:     STORE_ID,
+          store_id:     storeId,
           name:         name.trim(),
           category,
           unit:         unit.trim() || "lbs",
@@ -141,9 +149,16 @@ export default function ItemPresetsPage() {
       <NavBar />
 
       <main id="main" className="mx-auto max-w-6xl px-6 py-8">
-        <h1 className="font-display text-3xl font-bold tracking-tightest text-ink">
-          Item Presets
-        </h1>
+        <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between">
+          <h1 className="font-display text-3xl font-bold tracking-tightest text-ink">
+            Item Presets
+          </h1>
+          {businessName && (
+            <span className="text-sm font-medium text-burnt">
+              {businessName}
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-ink/65">
           Save items once, quick-log every shift. Synced across all devices.
         </p>

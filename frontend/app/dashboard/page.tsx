@@ -12,6 +12,7 @@ import {
   FlaskConical,
 } from "lucide-react";
 import NavBar from "@/components/NavBar";
+import { useRequireAuth } from "@/context/AuthContext";
 
 const WasteChart = dynamic(() => import("@/components/WasteChart"), { ssr: false });
 
@@ -40,7 +41,6 @@ type Metrics = {
   recentDonations: Donation[];
 };
 
-const STORE_ID = "28f86d0d-9f36-4b5c-b97c-353a493cd3e9";
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 /* ─── Helpers ───────────────────────────────────────────────────────────────── */
@@ -132,21 +132,25 @@ const containerVariants = {
 
 const cardVariants = {
   hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.45, ease: "easeOut" as const } },
 };
 
 /* ─── Component ─────────────────────────────────────────────────────────────── */
 
 export default function Dashboard() {
+  const { storeId, businessName, loading: authLoading } = useRequireAuth();
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!storeId) return;
+
     async function loadMetrics() {
       try {
+        setLoading(true);
         const res = await fetch(
-          `${API_BASE}/api/v1/metrics/summary/${STORE_ID}`
+          `${API_BASE}/api/v1/metrics/summary/${storeId}`
         );
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
@@ -160,7 +164,7 @@ export default function Dashboard() {
       }
     }
     loadMetrics();
-  }, []);
+  }, [storeId]);
 
   const handleExport = useCallback(() => {
     if (metrics?.recentDonations) {
@@ -213,13 +217,20 @@ export default function Dashboard() {
 
       <main id="main" className="mx-auto max-w-6xl px-6 py-8">
         {/* Title */}
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold tracking-tightest text-ink">
-            ESG &amp; Tax Analytics
-          </h1>
-          <p className="mt-1 text-sm text-ink/65">
-            Real-time rescue and impact metrics · EPA WARM v15-Aligned
-          </p>
+        <div className="mb-8 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+          <div>
+            <h1 className="font-display text-3xl font-bold tracking-tightest text-ink">
+              ESG &amp; Tax Analytics
+            </h1>
+            <p className="mt-1 text-sm text-ink/65">
+              {businessName ? `${businessName} · ` : ""}Real-time rescue and impact metrics · EPA WARM v15-Aligned
+            </p>
+          </div>
+          {storeId && (
+            <span className="text-xs font-mono text-ink/40">
+              Store ID: {storeId.slice(0, 8)}…
+            </span>
+          )}
         </div>
 
         {/* Loading skeleton */}

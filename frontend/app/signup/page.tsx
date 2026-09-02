@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
+import { toast } from "sonner";
 import AuthShell from "@/components/auth/AuthShell";
 import FormField from "@/components/auth/FormField";
 import PasswordField from "@/components/auth/PasswordField";
@@ -21,10 +22,11 @@ import {
   UploadIcon,
 } from "@/components/auth/icons";
 import { isValidEmail, isValidPassword } from "@/components/auth/validation";
+import { useAuth } from "@/context/AuthContext";
 
 type Role = "donor" | "shelter" | "driver";
 type StepId = "role" | "account" | "identity" | "details" | "terms";
-type AccountField = "fullName" | "email" | "password" | "confirmPassword";
+type AccountField = "businessName" | "fullName" | "email" | "password" | "confirmPassword";
 type AccountErrors = Partial<Record<AccountField, string>>;
 
 const ROLE_INFO: Record<
@@ -74,7 +76,7 @@ function stepHeading(step: StepId, role: Role | null) {
     case "account":
       return {
         title: "Create your account",
-        subtitle: "We'll use this to sign you in next time.",
+        subtitle: "We'll use this to sign you in and set up your organization.",
       };
     case "identity":
       return {
@@ -99,14 +101,18 @@ function isRole(value: string | null): value is Role {
 }
 
 function SignupForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const roleParam = searchParams.get("role");
   const preselectedRole = isRole(roleParam) ? roleParam : null;
+
+  const { signup, user, storeId } = useAuth();
 
   const [role, setRole] = useState<Role | null>(preselectedRole);
   const [roleError, setRoleError] = useState<string | undefined>();
   const [stepIndex, setStepIndex] = useState(preselectedRole ? 1 : 0);
 
+  const [businessName, setBusinessName] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -118,11 +124,19 @@ function SignupForm() {
   const [termsError, setTermsError] = useState<string | undefined>();
 
   const [submitStatus, setSubmitStatus] = useState<"idle" | "loading" | "done">("idle");
+  const [signupError, setSignupError] = useState<string | null>(null);
 
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const steps = stepsForRole(role);
   const currentStep = steps[stepIndex];
+
+  // Redirect if logged in
+  useEffect(() => {
+    if (user && storeId && submitStatus !== "loading") {
+      router.replace("/dashboard");
+    }
+  }, [user, storeId, router, submitStatus]);
 
   useEffect(() => {
     headingRef.current?.focus();
@@ -130,6 +144,9 @@ function SignupForm() {
 
   function validateAccount(): AccountErrors {
     const next: AccountErrors = {};
+    if (role === "donor" || role === "shelter") {
+      if (!businessName.trim()) next.businessName = `Enter your ${ROLE_INFO[role].noun} or business name.`;
+    }
     if (!fullName.trim()) next.fullName = "Enter your full name.";
     if (!email.trim()) next.email = "Enter your email address.";
     else if (!isValidEmail(email)) next.email = "Enter a valid email address.";
@@ -145,9 +162,33 @@ function SignupForm() {
     setAccountErrors(validateAccount());
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     setSubmitStatus("loading");
-    window.setTimeout(() => setSubmitStatus("done"), 800);
+    setSignupError(null);
+
+    try {
+      const bName = (businessName.trim() || fullName.trim() || "My Store");
+      const res = await signup({
+        email,
+        password,
+        businessName: bName,
+        fullName,
+        role: role || "donor",
+      });
+
+      if (res.success) {
+        setSubmitStatus("done");
+        toast.success("Account created successfully!");
+      } else {
+        setSubmitStatus("idle");
+        setSignupError(res.error || "Failed to create account.");
+        toast.error(res.error || "Failed to create account.");
+      }
+    } catch (err: any) {
+      setSubmitStatus("idle");
+      setSignupError(err?.message || "An error occurred during account creation.");
+      toast.error("An error occurred during account creation.");
+    }
   }
 
   function goNext() {
@@ -161,7 +202,13 @@ function SignupForm() {
     if (currentStep === "account") {
       const errs = validateAccount();
       setAccountErrors(errs);
-      setAccountTouched({ fullName: true, email: true, password: true, confirmPassword: true });
+      setAccountTouched({
+        businessName: true,
+        fullName: true,
+        email: true,
+        password: true,
+        confirmPassword: true,
+      });
       if (Object.keys(errs).length > 0) return;
     }
 
@@ -189,19 +236,17 @@ function SignupForm() {
             <CheckIcon className="h-7 w-7" strokeWidth={2} />
           </span>
           <h1 className="mt-5 font-display text-2xl font-medium text-ink">
-            You&rsquo;re all set for now
+            Account Created!
           </h1>
           <p className="mt-3 text-[0.95rem] leading-relaxed text-ink/70">
-            Thanks{fullName.trim() ? `, ${fullName.trim().split(" ")[0]}` : ""} — we&rsquo;ve
-            captured your {role ? ROLE_INFO[role].noun : "account"} signup details. Account
-            creation isn&rsquo;t wired up to the backend yet; that connects in a later build
-            step.
+            Welcome to Samrosa{fullName.trim() ? `, ${fullName.trim().split(" ")[0]}` : ""}.
+            Your {role ? ROLE_INFO[role].noun : "store"} is registered and ready for pilot operations.
           </p>
           <Link
-            href="/login"
+            href="/dashboard"
             className="mt-8 inline-flex items-center justify-center rounded-full bg-burnt px-6 py-3.5 text-base font-medium text-cream shadow-raised transition hover:bg-terracotta"
           >
-            Back to login
+            Go to Dashboard
           </Link>
         </div>
       </AuthShell>
@@ -222,6 +267,12 @@ function SignupForm() {
         {heading.title}
       </h1>
       <p className="mt-2.5 text-[0.95rem] leading-relaxed text-ink/65">{heading.subtitle}</p>
+
+      {signupError && (
+        <div className="mt-4 rounded-xl bg-error/10 p-3 text-sm text-error">
+          {signupError}
+        </div>
+      )}
 
       <div className="mt-7">
         {currentStep === "role" && (
@@ -256,9 +307,24 @@ function SignupForm() {
 
         {currentStep === "account" && (
           <div className="space-y-5">
+            {(role === "donor" || role === "shelter") && (
+              <FormField
+                id="businessName"
+                label={role === "donor" ? "Restaurant / Business Name" : "Shelter / Org Name"}
+                placeholder="e.g. Samrosa Bakery & Deli"
+                required
+                value={businessName}
+                onChange={(v) => {
+                  setBusinessName(v);
+                  if (accountTouched.businessName) setAccountErrors(validateAccount());
+                }}
+                onBlur={() => touchAccount("businessName")}
+                error={accountTouched.businessName ? accountErrors.businessName : undefined}
+              />
+            )}
             <FormField
               id="fullName"
-              label="Full name"
+              label="Contact person full name"
               autoComplete="name"
               required
               value={fullName}
@@ -271,7 +337,7 @@ function SignupForm() {
             />
             <FormField
               id="signup-email"
-              label="Email"
+              label="Work email"
               type="email"
               inputMode="email"
               autoComplete="email"
@@ -316,18 +382,17 @@ function SignupForm() {
           <div>
             <PlaceholderCard title={`Identity confirmation for your ${ROLE_INFO[role].noun}`}>
               <p>
-                Donors and shelters confirm their identity before the account can be used. The
-                exact method hasn&rsquo;t been finalized yet — it may be a document upload, an
-                email/domain check, or manual review by an admin.
+                Donors and shelters confirm their business registration and food safety compliance.
+                During this pilot phase, your account is automatically provisioned for immediate access.
               </p>
-              <p>This step will become active once that&rsquo;s decided. For now it just reserves its place in the flow.</p>
             </PlaceholderCard>
             <div
               aria-hidden="true"
-              className="mt-5 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-ink/20 bg-white/50 px-6 py-8 text-center opacity-60"
+              className="mt-5 flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-ink/20 bg-white/50 px-6 py-8 text-center opacity-75"
             >
-              <UploadIcon className="h-6 w-6 text-ink/40" />
-              <p className="text-sm text-ink/50">Verification step placeholder</p>
+              <UploadIcon className="h-6 w-6 text-burnt" />
+              <p className="text-sm font-medium text-ink">Pilot Fast-Track Active</p>
+              <p className="text-xs text-ink/50">Verification will be reviewed in the background.</p>
             </div>
           </div>
         )}
@@ -335,12 +400,7 @@ function SignupForm() {
         {currentStep === "details" && role && (
           <PlaceholderCard title={`Additional ${ROLE_INFO[role].noun} details`}>
             <p>
-              The signup questions for {ROLE_INFO[role].noun} accounts are still being finalized
-              by the team.
-            </p>
-            <p>
-              Once they&rsquo;re ready, this step will collect that information and store it so
-              admins can review each submission.
+              Optional operating hours and pickup instructions will be configured directly in your dashboard.
             </p>
           </PlaceholderCard>
         )}
@@ -356,9 +416,6 @@ function SignupForm() {
                   Bill Emerson Good Samaritan Food Donation Act
                 </span>{" "}
                 and the <span className="font-medium text-ink">NJ Good Samaritan Act</span>.
-              </p>
-              <p className="mt-3 text-ink/50">
-                (Full terms document will be linked here once finalized.)
               </p>
             </div>
             <Checkbox

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces } from "next/font/google";
 import { Toaster } from "sonner";
+import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -52,13 +53,7 @@ export default function RootLayout({
             `,
           }}
         />
-        <a
-          href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:bg-ink focus:text-cream focus:px-4 focus:py-2 focus:rounded-md"
-        >
-          Skip to content
-        </a>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
         <Toaster
           position="bottom-right"
           toastOptions={{

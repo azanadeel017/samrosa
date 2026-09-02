@@ -28,6 +28,7 @@ const { healthCheck, pool } = require('./db');
 const donationsRouter = require('./routes/donations');
 const metricsRouter = require('./routes/metrics');
 const presetsRouter = require('./routes/presets');
+const authRouter = require('./routes/auth');
 
 // ─── App Instantiation ────────────────────────────────────────────────────────
 const app  = express();
@@ -98,6 +99,7 @@ app.get('/ready', async (_req, res) => {
 app.use('/api/donations', donationsRouter);
 app.use('/api/v1/metrics', metricsRouter);
 app.use('/api/v1/presets', presetsRouter);
+app.use('/api/v1/auth', authRouter);
 
 // ─── SPA Fallback ────────────────────────────────────────────────────────────
 // For any non-API route, serve the Next.js page if it exists, otherwise index.html
