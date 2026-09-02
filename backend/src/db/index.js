@@ -22,11 +22,11 @@ const { Pool } = require('pg');
 // ─── Pool Configuration ───────────────────────────────────────────────────────
 
 const poolConfig = process.env.DATABASE_URL
-  ? {
-      connectionString: process.env.DATABASE_URL,
-      // Required when connecting to Heroku Postgres or any TLS-enforcing provider
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    }
+    ? {
+        connectionString: process.env.DATABASE_URL,
+        // Required when connecting to Supabase / Heroku Postgres or any TLS-enforcing provider
+        ssl: process.env.NODE_ENV === 'production' || (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost') && !process.env.DATABASE_URL.includes('127.0.0.1')) ? { rejectUnauthorized: false } : false,
+      }
   : {
       host:     process.env.PGHOST     || 'localhost',
       port:     parseInt(process.env.PGPORT || '5432', 10),

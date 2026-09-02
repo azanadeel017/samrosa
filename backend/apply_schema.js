@@ -1,6 +1,7 @@
 'use strict';
 require('dotenv').config();
 const fs = require('fs');
+const path = require('path');
 const { Client } = require('pg');
 
 async function runSchema() {
@@ -10,7 +11,7 @@ async function runSchema() {
   
   try {
     await client.connect();
-    const schemaSql = fs.readFileSync('schema.sql', 'utf8');
+    const schemaSql = fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8');
     
     console.log('Applying schema to database...');
     await client.query(schemaSql);

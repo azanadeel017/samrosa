@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS donors (
     CHECK (contact_email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$')
 );
 
+DROP TRIGGER IF EXISTS donors_set_updated_at ON donors;
 CREATE TRIGGER donors_set_updated_at
   BEFORE UPDATE ON donors
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -95,6 +96,7 @@ CREATE TABLE IF NOT EXISTS recipients (
     CHECK (max_weekly_lbs >= 0)
 );
 
+DROP TRIGGER IF EXISTS recipients_set_updated_at ON recipients;
 CREATE TRIGGER recipients_set_updated_at
   BEFORE UPDATE ON recipients
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -176,6 +178,7 @@ CREATE TABLE IF NOT EXISTS donations (
     CHECK (status != 'VOIDED' OR voided_reason IS NOT NULL)
 );
 
+DROP TRIGGER IF EXISTS donations_set_updated_at ON donations;
 CREATE TRIGGER donations_set_updated_at
   BEFORE UPDATE ON donations
   FOR EACH ROW EXECUTE FUNCTION set_updated_at();
@@ -268,6 +271,33 @@ CREATE TABLE IF NOT EXISTS carbon_metrics (
 
 CREATE INDEX IF NOT EXISTS idx_carbon_metrics_donor_id ON carbon_metrics (donor_id);
 CREATE INDEX IF NOT EXISTS idx_carbon_metrics_created_at ON carbon_metrics (created_at DESC);
+
+-- =============================================================================
+-- ITEM PRESETS — Saved menu items for quick cashier logging
+-- =============================================================================
+
+CREATE TABLE IF NOT EXISTS item_presets (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  store_id    UUID NOT NULL REFERENCES donors(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  category    TEXT NOT NULL
+    CHECK (category IN ('BAKERY','PRODUCE','PREPARED_MEALS','DAIRY_MEAT','SHELF_STABLE')),
+  unit        TEXT NOT NULL DEFAULT 'lbs',
+  cost_basis  NUMERIC(12,2) NOT NULL CHECK (cost_basis >= 0),
+  retail_value NUMERIC(12,2) NOT NULL CHECK (retail_value > 0),
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+  CONSTRAINT item_presets_cost_le_retail
+    CHECK (cost_basis <= retail_value)
+);
+
+DROP TRIGGER IF EXISTS trg_item_presets_updated_at ON item_presets;
+CREATE TRIGGER trg_item_presets_updated_at
+  BEFORE UPDATE ON item_presets
+  FOR EACH ROW EXECUTE FUNCTION set_updated_at();
+
+CREATE INDEX IF NOT EXISTS idx_item_presets_store_id ON item_presets (store_id);
 
 -- =============================================================================
 -- End of schema

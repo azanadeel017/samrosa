@@ -34,13 +34,13 @@ const CATEGORIES = [
 ] as const;
 
 const STORE_ID = "28f86d0d-9f36-4b5c-b97c-353a493cd3e9";
-const API_BASE  = "";
-const LS_KEY    = "samrosa_item_presets";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 /* ─── Component ─────────────────────────────────────────────────────────────── */
 
 export default function QuickLogPage() {
   const [presets, setPresets]           = useState<Preset[]>([]);
+  const [presetsLoading, setPresetsLoading] = useState(true);
   const [activePreset, setActivePreset] = useState<Preset | null>(null);
 
   const [category,     setCategory]     = useState("BAKERY");
@@ -50,12 +50,21 @@ export default function QuickLogPage() {
   const [description,  setDescription]  = useState("");
   const [submitting,   setSubmitting]   = useState(false);
 
+  /* ─── Fetch presets from API ──────────────────────────────────────────────── */
+
   useEffect(() => {
-    try {
-      setPresets(JSON.parse(localStorage.getItem(LS_KEY) || "[]"));
-    } catch {
-      setPresets([]);
+    async function loadPresets() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/presets/${STORE_ID}`);
+        const json = await res.json();
+        if (json.success) setPresets(json.data);
+      } catch (err) {
+        console.error("[log] presets fetch error:", err);
+      } finally {
+        setPresetsLoading(false);
+      }
     }
+    loadPresets();
   }, []);
 
   /* ─── Preset selection ────────────────────────────────────────────────────── */
@@ -77,22 +86,10 @@ export default function QuickLogPage() {
     const c = parseFloat(costBasis);
     const r = parseFloat(retailValue);
 
-    if (!Number.isFinite(w) || w <= 0) {
-      toast.error("Enter a valid weight > 0.");
-      return;
-    }
-    if (!Number.isFinite(c) || c < 0) {
-      toast.error("Enter a valid cost basis ≥ $0.");
-      return;
-    }
-    if (!Number.isFinite(r) || r <= 0) {
-      toast.error("Enter a valid retail value > $0.");
-      return;
-    }
-    if (c > r) {
-      toast.error("Cost basis cannot exceed retail value.");
-      return;
-    }
+    if (!Number.isFinite(w) || w <= 0) { toast.error("Enter a valid weight > 0."); return; }
+    if (!Number.isFinite(c) || c < 0)  { toast.error("Enter a valid cost basis ≥ $0."); return; }
+    if (!Number.isFinite(r) || r <= 0) { toast.error("Enter a valid retail value > $0."); return; }
+    if (c > r) { toast.error("Cost basis cannot exceed retail value."); return; }
     if (!description.trim() || description.trim().length < 3) {
       toast.error("Description must be at least 3 characters.");
       return;
@@ -154,7 +151,11 @@ export default function QuickLogPage() {
         </p>
 
         {/* Preset quick-buttons */}
-        {presets.length > 0 && (
+        {presetsLoading ? (
+          <div className="mt-6 flex justify-center py-4">
+            <Loader2 size={20} className="animate-spin text-ink/30" />
+          </div>
+        ) : presets.length > 0 ? (
           <section className="mt-6">
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink/50">
               Your Presets
@@ -181,9 +182,7 @@ export default function QuickLogPage() {
               })}
             </div>
           </section>
-        )}
-
-        {presets.length === 0 && (
+        ) : (
           <div className="mt-6 rounded-2xl border border-dashed border-ink/15 bg-white/50 px-6 py-6 text-center">
             <p className="text-sm text-ink/40">
               No presets saved yet.{" "}
@@ -200,7 +199,6 @@ export default function QuickLogPage() {
           className="mt-8 rounded-2xl border border-ink/8 bg-white/80 p-6 shadow-soft backdrop-blur"
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* Category */}
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink/50">
                 Category
@@ -211,14 +209,11 @@ export default function QuickLogPage() {
                 className="w-full rounded-xl border border-ink/12 bg-white px-4 py-2.5 text-sm text-ink focus:border-burnt focus:ring-1 focus:ring-burnt/30"
               >
                 {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
+                  <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
               </select>
             </div>
 
-            {/* Weight */}
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink/50">
                 Weight / Quantity ({activePreset?.unit || "lbs"})
@@ -235,7 +230,6 @@ export default function QuickLogPage() {
               />
             </div>
 
-            {/* Cost Basis */}
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink/50">
                 Cost Basis ($)
@@ -251,7 +245,6 @@ export default function QuickLogPage() {
               />
             </div>
 
-            {/* Retail Value */}
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink/50">
                 Retail Value ($)
@@ -267,7 +260,6 @@ export default function QuickLogPage() {
               />
             </div>
 
-            {/* Description */}
             <div className="sm:col-span-2">
               <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink/50">
                 Description
@@ -282,7 +274,6 @@ export default function QuickLogPage() {
             </div>
           </div>
 
-          {/* Submit — framer motion tap animation */}
           <motion.button
             type="submit"
             disabled={submitting}

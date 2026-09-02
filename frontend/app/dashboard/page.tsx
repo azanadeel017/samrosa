@@ -48,7 +48,7 @@ type Metrics = {
 };
 
 const STORE_ID = "28f86d0d-9f36-4b5c-b97c-353a493cd3e9";
-const API_BASE = "";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "";
 
 /* ─── Mock weekly chart data ─────────────────────────────────────────────────── */
 

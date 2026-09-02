@@ -27,6 +27,7 @@ const { healthCheck, pool } = require('./db');
 // ─── Feature Routers ──────────────────────────────────────────────────────────
 const donationsRouter = require('./routes/donations');
 const metricsRouter = require('./routes/metrics');
+const presetsRouter = require('./routes/presets');
 
 // ─── App Instantiation ────────────────────────────────────────────────────────
 const app  = express();
@@ -37,7 +38,7 @@ const PORT = parseInt(process.env.PORT || '3000', 10);
 // CORS only needed for local dev (Next.js dev server on port 3000)
 if (process.env.NODE_ENV !== 'production') {
   const cors = require('cors');
-  app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:5000'] }));
+  app.use(cors());
 }
 
 // Parse incoming JSON payloads (max 1 MB to prevent body-bomb DoS)
@@ -96,6 +97,7 @@ app.get('/ready', async (_req, res) => {
 
 app.use('/api/donations', donationsRouter);
 app.use('/api/v1/metrics', metricsRouter);
+app.use('/api/v1/presets', presetsRouter);
 
 // ─── SPA Fallback ────────────────────────────────────────────────────────────
 // For any non-API route, serve the Next.js page if it exists, otherwise index.html
