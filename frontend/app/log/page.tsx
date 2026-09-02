@@ -86,10 +86,22 @@ export default function QuickLogPage() {
     const c = parseFloat(costBasis);
     const r = parseFloat(retailValue);
 
-    if (!Number.isFinite(w) || w <= 0) { toast.error("Enter a valid weight > 0."); return; }
-    if (!Number.isFinite(c) || c < 0)  { toast.error("Enter a valid cost basis ≥ $0."); return; }
-    if (!Number.isFinite(r) || r <= 0) { toast.error("Enter a valid retail value > $0."); return; }
-    if (c > r) { toast.error("Cost basis cannot exceed retail value."); return; }
+    if (!weight || !Number.isFinite(w) || w <= 0) {
+      toast.error("Weight must be greater than 0 lbs");
+      return;
+    }
+    if (!costBasis || !Number.isFinite(c) || c <= 0) {
+      toast.error("Cost basis must be greater than $0.");
+      return;
+    }
+    if (!retailValue || !Number.isFinite(r) || r <= 0) {
+      toast.error("Retail value must be greater than $0.");
+      return;
+    }
+    if (r < c) {
+      toast.error("Retail value must be greater than or equal to cost basis.");
+      return;
+    }
     if (!description.trim() || description.trim().length < 3) {
       toast.error("Description must be at least 3 characters.");
       return;

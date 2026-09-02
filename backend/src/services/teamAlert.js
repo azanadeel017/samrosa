@@ -22,19 +22,42 @@ const WEBHOOK_URL = process.env.TEAM_ALERT_WEBHOOK_URL || null;
  * Send a pilot donation alert to the team.
  *
  * @param {object} params
- * @param {number} params.weight       - Total weight in lbs
+ * @param {string} [params.name]        - Item name/description
  * @param {string} params.category     - Classification (BAKERY, PRODUCE, etc.)
- * @param {number} params.deduction    - Enhanced deduction USD
+ * @param {number} params.weight       - Total weight in lbs
+ * @param {number} [params.cost_basis]   - Cost basis in USD
+ * @param {number} [params.retail_value] - Retail value in USD
+ * @param {number} [params.calculated_deduction] - Enhanced deduction USD
+ * @param {number} [params.deduction]  - Enhanced deduction USD fallback
  * @param {string} params.transactionId - Donation UUID
  * @param {string} [params.description] - Item description
  */
-async function sendTeamAlert({ weight, category, deduction, transactionId, description }) {
+async function sendTeamAlert({
+  name,
+  category,
+  weight,
+  cost_basis,
+  retail_value,
+  calculated_deduction,
+  deduction,
+  transactionId,
+  description,
+}) {
+  const itemName = name || description || 'Surplus Food';
+  const itemCategory = category || 'UNKNOWN';
+  const itemWeight = weight !== undefined && weight !== null ? weight : '0';
+  const itemCost = cost_basis !== undefined && cost_basis !== null ? Number(cost_basis).toFixed(2) : '0.00';
+  const itemRetail = retail_value !== undefined && retail_value !== null ? Number(retail_value).toFixed(2) : '0.00';
+  const finalDeduction = Number(calculated_deduction !== undefined ? calculated_deduction : deduction || 0).toFixed(2);
   const timestamp = new Date().toISOString();
+
   const message = [
     `🚨 NEW PILOT DONATION LOGGED`,
-    `Store logged ${weight} lbs of ${category}${description ? ` (${description})` : ''}.`,
-    `Enhanced Deduction: $${Number(deduction || 0).toFixed(2)}`,
-    `Transaction ID: ${transactionId}`,
+    `Store logged ${itemWeight} lbs of ${itemCategory} (${itemName}).`,
+    `Cost Basis: $${itemCost}`,
+    `Retail Value: $${itemRetail}`,
+    `Enhanced Deduction: $${finalDeduction}`,
+    `Transaction ID: ${transactionId || 'N/A'}`,
     `Timestamp: ${timestamp}`,
     `Ready for Share My Meals manual dispatch.`,
   ].join('\n');
@@ -44,16 +67,33 @@ async function sendTeamAlert({ weight, category, deduction, transactionId, descr
   console.log(message);
   console.log(`${'═'.repeat(60)}\n`);
 
+  const webhookUrl = process.env.TEAM_ALERT_WEBHOOK_URL;
+
   // Fire webhook if configured
-  if (WEBHOOK_URL) {
+  if (webhookUrl) {
     try {
-      // Supports both Discord and Slack webhook formats
-      const isDiscord = WEBHOOK_URL.includes('discord.com');
+      const isDiscord = webhookUrl.includes('discord.com');
       const body = isDiscord
-        ? { content: message }
+        ? {
+            content: '🚨 **NEW PILOT DONATION LOGGED**',
+            embeds: [
+              {
+                title: 'Donation Dispatch Details',
+                color: 13065010,
+                fields: [
+                  { name: 'Item / Category', value: `${itemName} (${itemCategory})`, inline: true },
+                  { name: 'Weight', value: `${itemWeight} lbs`, inline: true },
+                  { name: 'Cost Basis', value: `$${itemCost}`, inline: true },
+                  { name: 'Retail Value', value: `$${itemRetail}`, inline: true },
+                  { name: 'Calculated Deduction', value: `$${finalDeduction}`, inline: true },
+                ],
+                timestamp,
+              },
+            ],
+          }
         : { text: message };
 
-      const res = await fetch(WEBHOOK_URL, {
+      const res = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

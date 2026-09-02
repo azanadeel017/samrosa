@@ -290,9 +290,13 @@ router.post('/upload', async (req, res) => {
 
     // ── 4. Fire pilot team notification (non-blocking) ────────────────────────
     sendTeamAlert({
-      weight: total_weight_lbs,
+      name: description.trim(),
       category: classification,
+      weight: total_weight_lbs,
+      cost_basis: cost_basis,
+      retail_value: retail_value,
       deduction: parseFloat(row.enhanced_deduction),
+      calculated_deduction: parseFloat(row.enhanced_deduction),
       transactionId: row.transaction_id,
       description: description.trim(),
     }).catch(() => {}); // swallow — must never block the response
