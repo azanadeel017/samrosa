@@ -19,13 +19,17 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";   -- gen_random_uuid()
 CREATE EXTENSION IF NOT EXISTS "btree_gin";  -- composite GIN indices
 
 -- ── Shared audit-timestamp trigger function ───────────────────────────────────
-CREATE OR REPLACE FUNCTION set_updated_at()
-RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER 
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
 BEGIN
   NEW.updated_at = NOW();
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql;
+$$;
 
 -- =============================================================================
 -- TABLE: donors
@@ -312,20 +316,31 @@ ALTER TABLE public.item_presets ENABLE ROW LEVEL SECURITY;
 
 -- Item Presets Policies
 DROP POLICY IF EXISTS "Users can view own store presets" ON public.item_presets;
-CREATE POLICY "Users can view own store presets" ON public.item_presets FOR SELECT USING (auth.uid() = store_id);
+CREATE POLICY "Users can view own store presets" ON public.item_presets FOR SELECT USING ((SELECT auth.uid()) = store_id);
 
 DROP POLICY IF EXISTS "Users can insert own store presets" ON public.item_presets;
-CREATE POLICY "Users can insert own store presets" ON public.item_presets FOR INSERT WITH CHECK (auth.uid() = store_id);
+CREATE POLICY "Users can insert own store presets" ON public.item_presets FOR INSERT WITH CHECK ((SELECT auth.uid()) = store_id);
 
 DROP POLICY IF EXISTS "Users can delete own store presets" ON public.item_presets;
-CREATE POLICY "Users can delete own store presets" ON public.item_presets FOR DELETE USING (auth.uid() = store_id);
+CREATE POLICY "Users can delete own store presets" ON public.item_presets FOR DELETE USING ((SELECT auth.uid()) = store_id);
 
 -- Donors & Donations Policies
 DROP POLICY IF EXISTS "Users can view own donor record" ON public.donors;
-CREATE POLICY "Users can view own donor record" ON public.donors FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can view own donor record" ON public.donors FOR SELECT USING ((SELECT auth.uid()) = id);
 
 DROP POLICY IF EXISTS "Users can view own donations" ON public.donations;
-CREATE POLICY "Users can view own donations" ON public.donations FOR SELECT USING (auth.uid() = donor_id);
+CREATE POLICY "Users can view own donations" ON public.donations FOR SELECT USING ((SELECT auth.uid()) = donor_id);
+
+-- Downstream Receipts & Carbon Metrics Policies
+DROP POLICY IF EXISTS "Users can view own tax receipts" ON public.tax_receipts;
+CREATE POLICY "Users can view own tax receipts" ON public.tax_receipts FOR SELECT USING (
+  EXISTS (SELECT 1 FROM public.donations WHERE public.donations.id = public.tax_receipts.donation_id AND public.donations.donor_id = (SELECT auth.uid()))
+);
+
+DROP POLICY IF EXISTS "Users can view own carbon metrics" ON public.carbon_metrics;
+CREATE POLICY "Users can view own carbon metrics" ON public.carbon_metrics FOR SELECT USING (
+  (SELECT auth.uid()) = donor_id
+);
 
 -- =============================================================================
 -- End of schema
