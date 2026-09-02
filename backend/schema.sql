@@ -300,5 +300,33 @@ CREATE TRIGGER trg_item_presets_updated_at
 CREATE INDEX IF NOT EXISTS idx_item_presets_store_id ON item_presets (store_id);
 
 -- =============================================================================
+-- ROW LEVEL SECURITY (RLS) & TENANT ISOLATION POLICIES
+-- =============================================================================
+
+ALTER TABLE public.donors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.recipients ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.donations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tax_receipts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.carbon_metrics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.item_presets ENABLE ROW LEVEL SECURITY;
+
+-- Item Presets Policies
+DROP POLICY IF EXISTS "Users can view own store presets" ON public.item_presets;
+CREATE POLICY "Users can view own store presets" ON public.item_presets FOR SELECT USING (auth.uid() = store_id);
+
+DROP POLICY IF EXISTS "Users can insert own store presets" ON public.item_presets;
+CREATE POLICY "Users can insert own store presets" ON public.item_presets FOR INSERT WITH CHECK (auth.uid() = store_id);
+
+DROP POLICY IF EXISTS "Users can delete own store presets" ON public.item_presets;
+CREATE POLICY "Users can delete own store presets" ON public.item_presets FOR DELETE USING (auth.uid() = store_id);
+
+-- Donors & Donations Policies
+DROP POLICY IF EXISTS "Users can view own donor record" ON public.donors;
+CREATE POLICY "Users can view own donor record" ON public.donors FOR SELECT USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can view own donations" ON public.donations;
+CREATE POLICY "Users can view own donations" ON public.donations FOR SELECT USING (auth.uid() = donor_id);
+
+-- =============================================================================
 -- End of schema
 -- =============================================================================

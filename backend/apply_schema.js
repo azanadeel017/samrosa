@@ -3,10 +3,11 @@ require('dotenv').config();
 const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
-
 async function runSchema() {
+  const isRemote = process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('localhost') && !process.env.DATABASE_URL.includes('127.0.0.1');
   const client = new Client({
-    connectionString: process.env.DATABASE_URL
+    connectionString: process.env.DATABASE_URL,
+    ssl: isRemote ? { rejectUnauthorized: false } : false,
   });
   
   try {
